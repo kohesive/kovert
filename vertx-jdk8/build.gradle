@@ -1,0 +1,12 @@
+dependencies {
+    compile relativeProject(":kovert-core")
+
+    compile "uy.klutter:klutter-core-jdk8:$version_klutter"
+    compile "uy.klutter:klutter-config-typesafe-jdk8:$version_klutter"
+    compile "uy.klutter:klutter-json-jackson-jdk8:$version_klutter"
+
+    compile "io.vertx:vertx-core:$version_vertx"
+    compile "io.vertx:vertx-web:$version_vertx"
+
+    testCompile "io.vertx:vertx-unit:$version_vertx"
+}

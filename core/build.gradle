@@ -1,0 +1,7 @@
+dependencies {
+    compile "uy.kohesive.injekt:injekt-core:$version_injekt"
+    compile "uy.klutter:klutter-core-jdk7:$version_klutter"
+    compile "uy.klutter:klutter-config-typesafe-jdk7:$version_klutter"
+    compile "uy.klutter:klutter-json-jackson-jdk6:$version_klutter"
+    compile "nl.komponents.kovenant:kovenant:$version_kovenant"
+}

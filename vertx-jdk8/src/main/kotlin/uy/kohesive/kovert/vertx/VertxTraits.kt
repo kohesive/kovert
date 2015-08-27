@@ -1,6 +1,7 @@
 package uy.kohesive.kovert.vertx
 
 import io.vertx.core.http.HttpMethod
+import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import uy.kohesive.kovert.core.HttpVerb
 
@@ -45,3 +46,9 @@ public interface ContextFactory<T : Any> : uy.kohesive.kovert.core.CoreContextFa
     override fun createContext(routingContext: RoutingContext): T
 }
 
+/**
+ * Optionally setup a router (afer Loger, Cookie, Session handlers, Kovert failure handler are attached, but before body handler and request intercept)
+ */
+public interface RouterInit {
+    fun initRouter(router: Router, controllerBasePath: String, controlerBasePathAsWildcard: String)
+}

@@ -24,7 +24,8 @@ import java.util.*
 private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                                               controller: Any, member: Any, dispatchInstance: Any,
                                               dispatchFunction: Method, returnType: Class<*>,
-                                              paramDefs: List<ParamDef>, contextFactory: ContextFactory<*>) {
+                                              paramDefs: List<ParamDef>, contextFactory: ContextFactory<*>,
+                                              disallowVoid: Boolean, defaultSuccessStatus: Int) {
     val JSON: ObjectMapper = Json.mapper
     route.handler { routeContext ->
         val requestContext = contextFactory.createContext(routeContext)
@@ -66,8 +67,8 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         }
 
         fun sendResponse(result: Any?) {
-            if (returnType.getName() == "void") {
-                routeContext.fail(RuntimeException("Failutre after invocation of route function:  A route without a return type must redirect."))
+            if (disallowVoid && returnType.getName() == "void") {
+                routeContext.fail(RuntimeException("Failure after invocation of route function:  A route without a return type must redirect."))
                 return
             } else if (returnType.isAssignableFrom(javaClass<String>()) || result is String) {
                 val contentType = routeContext.response().headers().get(HttpHeaders.Names.CONTENT_TYPE)
@@ -78,6 +79,9 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     routeContext.fail(RuntimeException("Handler did not return any content, only a null which for HTML doesn't really make sense."))
                     return
                 }
+                if (routeContext.response().getStatusCode() == 200) {
+                    routeContext.response().setStatusCode(defaultSuccessStatus)
+                }
                 routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(result as String)
             } else {
                 // at this point we really just need to make a JSON object because we have data not text
@@ -85,6 +89,9 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 // TODO: should we check if getAcceptableContentType() conflicts with application/json
                 // TODO: should we check if the produces content type conflicts with application/json
                 // TODO: we now return what they want as content type, but we are really creating JSON
+                if (routeContext.response().getStatusCode() == 200) {
+                    routeContext.response().setStatusCode(defaultSuccessStatus)
+                }
                 val contentType = routeContext.getAcceptableContentType() ?: /* producesContentType.nullIfBlank() ?: */ "application/json"
                 routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
             }

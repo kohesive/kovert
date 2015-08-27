@@ -14,44 +14,49 @@ import kotlin.reflect.jvm.java
  *  might.
  */
 
+public class WrappedThrowableException(cause: Throwable): Exception(cause.getMessage(), cause)
 
 /**
- * Start vert.x returning a Kovenant Promise<Vertx, Throwable>
+ * Start vert.x returning a Kovenant Promise<Vertx, Exception>
  */
-public fun vertx(): Promise<Vertx, Throwable> {
+public fun vertx(): Promise<Vertx, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<Vertx, Throwable>()
+    val deferred = deferred<Vertx, Exception>()
     try {
         deferred.resolve(Vertx.vertx())
-    } catch (ex: Throwable) {
+    } catch (ex: Exception) {
         deferred.reject(ex)
+    } catch (ex: Throwable) {
+        deferred.reject(WrappedThrowableException(ex))
     }
     return deferred.promise
 }
 
 /**
- * Start vert.x returning a Kovenant Promise<Vertx, Throwable>
+ * Start vert.x returning a Kovenant Promise<Vertx, Exception>
  */
-public fun vertx(options: VertxOptions): Promise<Vertx, Throwable> {
+public fun vertx(options: VertxOptions): Promise<Vertx, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<Vertx, Throwable>()
+    val deferred = deferred<Vertx, Exception>()
     try {
         deferred.resolve(Vertx.vertx(options))
-    } catch (ex: Throwable) {
+    } catch (ex: Exception) {
         deferred.reject(ex)
+    }  catch (ex: Throwable) {
+        deferred.reject(WrappedThrowableException(ex))
     }
     return deferred.promise
 }
 
 /**
- * Start clustered vert.x returning a Kovenant Promise<Vertx, Throwable>
+ * Start clustered vert.x returning a Kovenant Promise<Vertx, Exception>
  */
-public fun vertxCluster(options: VertxOptions): Promise<Vertx, Throwable> {
+public fun vertxCluster(options: VertxOptions): Promise<Vertx, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<Vertx, Throwable>()
+    val deferred = deferred<Vertx, Exception>()
     Vertx.clusteredVertx(options, promiseResult(deferred))
     return deferred.promise
 }
@@ -62,89 +67,89 @@ public fun vertxCluster(options: VertxOptions): Promise<Vertx, Throwable> {
 public fun vertxContext(): Context? = Vertx.currentContext()
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun Vertx.promiseDeployVerticle(verticle: Verticle): Promise<String, Throwable> {
+public fun Vertx.promiseDeployVerticle(verticle: Verticle): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(verticle, promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun Vertx.promiseDeployVerticle(verticle: Verticle, options: DeploymentOptions): Promise<String, Throwable> {
+public fun Vertx.promiseDeployVerticle(verticle: Verticle, options: DeploymentOptions): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(verticle, options, promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: KClass<T>): Promise<String, Throwable> {
+public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: KClass<T>): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(verticleClass.java.getName(), promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: KClass<T>, options: DeploymentOptions): Promise<String, Throwable> {
+public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: KClass<T>, options: DeploymentOptions): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(verticleClass.java.getName(), options, promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: Class<T>): Promise<String, Throwable> {
+public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: Class<T>): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(verticleClass.getName(), promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: Class<T>, options: DeploymentOptions): Promise<String, Throwable> {
+public fun  <T : AbstractVerticle> Vertx.promiseDeployVerticle(verticleClass: Class<T>, options: DeploymentOptions): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(verticleClass.getName(), options, promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun Vertx.promiseDeployVerticle(name: String): Promise<String, Throwable> {
+public fun Vertx.promiseDeployVerticle(name: String): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(name, promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Deploy a verticle, returning a Promise<deploymentId as String, Throwable>
+ * Deploy a verticle, returning a Promise<deploymentId as String, Exception>
  */
-public fun Vertx.promiseDeployVerticle(name: String, options: DeploymentOptions): Promise<String, Throwable> {
+public fun Vertx.promiseDeployVerticle(name: String, options: DeploymentOptions): Promise<String, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<String, Throwable>()
+    val deferred = deferred<String, Exception>()
     deployVerticle(name, options, promiseResult(deferred))
     return deferred.promise
 }
@@ -164,34 +169,34 @@ public fun <T : AbstractVerticle> Vertx.deployVerticle(verticleClass: Class<T>):
 }
 
 /**
- * Undeploy a verticle, returning a Promise<Void, Throwable>
+ * Undeploy a verticle, returning a Promise<Void, Exception>
  */
-public fun Vertx.promiseUndeploy(deploymentId: String): Promise<Void, Throwable> {
+public fun Vertx.promiseUndeploy(deploymentId: String): Promise<Void, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<Void, Throwable>()
+    val deferred = deferred<Void, Exception>()
     this.undeploy(deploymentId, promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Close vertx, returning a Promise<Void, Throwable>
+ * Close vertx, returning a Promise<Void, Exception>
  */
-public fun Vertx.promiseClose(): Promise<Void, Throwable> {
-    val deferred = deferred<Void, Throwable>()
+public fun Vertx.promiseClose(): Promise<Void, Exception> {
+    val deferred = deferred<Void, Exception>()
     this.close(promiseResult(deferred))
     return deferred.promise
 }
 
 /**
- * Execute blocking code using vertx dispatcher returning a Promise<T, Throwable>.  Since Kovenant and
+ * Execute blocking code using vertx dispatcher returning a Promise<T, Exception>.  Since Kovenant and
  * vertx dispatching are united, this is the same as doing async { ... } in Kovenant, no need to call on a
  * vertx instance.
  */
-public fun <T> Vertx.promiseExecuteBlocking(blockingCode: () -> T): Promise<T, Throwable> {
+public fun <T> Vertx.promiseExecuteBlocking(blockingCode: () -> T): Promise<T, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<T, Throwable>()
+    val deferred = deferred<T, Exception>()
     this.executeBlocking({ response ->
         try {
             response.complete(blockingCode())
@@ -203,14 +208,14 @@ public fun <T> Vertx.promiseExecuteBlocking(blockingCode: () -> T): Promise<T, T
 }
 
 /**
- * Execute blocking code using vertx dispatcher returning a Promise<T, Throwable>.  Since Kovenant and
+ * Execute blocking code using vertx dispatcher returning a Promise<T, Exception>.  Since Kovenant and
  * vertx dispatching are united, this is the same as doing async { ... } in Kovenant, no need to call on a
  * vertx instance.
  */
-public fun <T> Vertx.executeBlocking(blockingCode: () -> T): Promise<T, Throwable> {
+public fun <T> Vertx.executeBlocking(blockingCode: () -> T): Promise<T, Exception> {
     VertxInit.ensure()
 
-    val deferred = deferred<T, Throwable>()
+    val deferred = deferred<T, Exception>()
     this.executeBlocking({ response ->
         try {
             response.complete(blockingCode())

@@ -12,10 +12,7 @@ import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
 import uy.kohesive.kovert.core.*
-import uy.kohesive.kovert.vertx.ContextFactory
-import uy.kohesive.kovert.vertx.InterceptRequest
-import uy.kohesive.kovert.vertx.InterceptRequestFailure
-import uy.kohesive.kovert.vertx.externalizeUrl
+import uy.kohesive.kovert.vertx.*
 import java.lang.annotation.ElementType
 import java.lang.annotation.Retention
 import java.lang.annotation.RetentionPolicy
@@ -37,7 +34,7 @@ import kotlin.reflect.jvm.kotlin
  *
  * Optionally the controller can implement interfaces that allow further functionality, see ControllerTraits.kt for more information.
  */
-internal fun bindControllerController(router: Router, kotlinClassAsController: Any, atPath: String = "/", verbAliases: Map<HttpVerb, Array<out String>> = kotlin.emptyMap()) {
+internal fun bindControllerController(router: Router, kotlinClassAsController: Any, atPath: String = "/", verbAliases: List<PrefixAsVerbWithSuccessStatus> = emptyList()) {
     val path = atPath.mustNotEndWith('/').mustStartWith('/')
     val wildPath = path.mustNotEndWith('/').mustEndWith("/*")
 
@@ -66,6 +63,10 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         }
     }
 
+    if (controller is RouterInit) {
+        controller.initRouter(router, path, wildPath)
+    }
+
     // set body handlers for this controller for POST and PUT
     router.route(wildPath).method(HttpMethod.POST).method(HttpMethod.PUT).method(HttpMethod.PATCH).handler(BodyHandler.create().setBodyLimit(8 * 1024))
 
@@ -79,14 +80,14 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         }
     }
 
-    val controllerAnnotatedVerbAliases = controller.javaClass.getAnnotationsByType(kotlin.javaClass<VerbAliases>())
+    val controllerAnnotatedVerbAliases = (controller.javaClass.getAnnotation(kotlin.javaClass<VerbAliases>())?.value?.toList() ?: emptyList()) +
+                                          listOf(controller.javaClass.getAnnotation(kotlin.javaClass<VerbAlias>())).filterNotNull()
 
-    val allVerbAliases = defaultVerbAliases.map { it.getKey() to it.getValue() } +
-            verbAliases.entrySet().map { it.getKey() to it.getValue() } +
-            (controllerAnnotatedVerbAliases?.map { it.verb to it.prefixes } ?: kotlin.emptyList())
-    val prefixToVerbMap = allVerbAliases.map { entry -> entry.second.map { it.toLowerCase() to entry.first } }.flatten().toMap()
+    val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values().toList() +
+                          controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
+                          verbAliases).toMap({it.prefix}, {it})
 
-    fun memberNameToPath(name: String, knownVerb: HttpVerb?, knownLocation: String?, skipPrefix: Boolean): Pair<HttpVerb?, String> {
+    fun memberNameToPath(name: String, knownVerb: VerbWithSuccessStatus?, knownLocation: String?, skipPrefix: Boolean): Pair<VerbWithSuccessStatus?, String> {
         // split camel cases, with underscores also acting as split point then ignored
         // Convert things that are proceeded by "by" to a variable ":variable"  (ByAge = /:age/)
         // Convert things that are proceeded by "with" to a path element + following variable (WithName = /name/:name/)
@@ -106,7 +107,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                 .filterNot { it.isNullOrBlank() }
                 .map { it.trim().toLowerCase() }
                 .filterNot { it.trim().all { it == '_' } }
-        val memberVerb = knownVerb ?: prefixToVerbMap.get(parts.first().toLowerCase())
+        val memberVerb = knownVerb ?: prefixToVerbMap.get(parts.first().toLowerCase())?.toVerbStatus()
         val skipCount = if (knownVerb == null || skipPrefix) 1 else 0
         val memberPath = knownLocation ?: parts.drop(skipCount).joinToString("/").replace("""((^|[\/])by\/)((?:[\w])+)""".toRegex(), { match ->
             // by/something = :something
@@ -135,7 +136,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                 val dispatchInstance = controller
                 val dispatchFunction = method
                 dispatchFunction.setAccessible(true)
-                val (verb, subPath) = memberNameToPath(method.getName(), verbAnnotation?.verb, locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+                val (verb, subPath) = memberNameToPath(method.getName(), verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
                 if (verb != null) {
                     setupContextAndRouteForMethod(router, logger, controller, path, verb, subPath, method, method.getName(), dispatchInstance, dispatchFunction, paramAnnotations)
                 }
@@ -163,7 +164,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                         logger.debug("Ignoring property ${prop.name}, is of type Function, has instance, has invoke, but is not an extension method or is missing parameter names")
                     }
 
-                    val (verb, subPath) = memberNameToPath(prop.name, verbAnnotation?.verb, locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+                    val (verb, subPath) = memberNameToPath(prop.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
                     if (verb != null) {
                         dispatchFunction.setAccessible(true)
                         setupContextAndRouteForMethod(router, logger, controller, path, verb, subPath, prop, prop.name, dispatchInstance, dispatchFunction, paramAnnotations)
@@ -183,8 +184,13 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     }
 }
 
+internal data class VerbWithSuccessStatus(val verb: uy.kohesive.kovert.core.HttpVerb, val successStatusCode: kotlin.Int)
 
-internal val verbToVertx = mapOf(HttpVerb.GET to HttpMethod.GET,
+internal fun PrefixAsVerbWithSuccessStatus.toVerbStatus() = VerbWithSuccessStatus(this.verb, this.successStatusCode)
+internal fun Verb.toVerbStatus() = VerbWithSuccessStatus(this.verb, this.successStatusCode)
+
+
+internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to HttpMethod.GET,
         HttpVerb.PUT to HttpMethod.PUT,
         HttpVerb.POST to HttpMethod.POST,
         HttpVerb.DELETE to HttpMethod.DELETE,
@@ -192,7 +198,7 @@ internal val verbToVertx = mapOf(HttpVerb.GET to HttpMethod.GET,
         HttpVerb.PATCH to HttpMethod.PATCH)
 
 @suppress("UNCHECKED_CAST")
-private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verb: HttpVerb, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: Method, paramAnnotations: Array<Array<Annotation>>) {
+private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verb: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: Method, paramAnnotations: Array<Array<Annotation>>) {
     val receiverType = dispatchFunction.getParameterTypes().first()
 
     val contextFactory = if (controller is ContextFactory<*>) {
@@ -237,11 +243,13 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     val finalRoutePath = fullPath.nullIfBlank() ?: "/"
 
-    val route = router.route(finalRoutePath).method(verbToVertx.get(verb)!!)
+    val route = router.route(finalRoutePath).method(verbToVertx.get(verb.verb)!!)
+
+    val disallowVoid = verb.verb == HttpVerb.GET
 
     logger.info("Binding ${controller.javaClass.getName()}.${memberName} w/verb ${verb} to ${finalRoutePath} with context type ${receiverType.getName()}")
 
-    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, returnType, paramDefs, contextFactory)
+    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, returnType, paramDefs, contextFactory, disallowVoid, verb.successStatusCode)
 }
 
 private fun unwrapInvokeException(rawEx: Throwable): Throwable {

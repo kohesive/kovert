@@ -62,18 +62,22 @@ private object VertxInit {
  * Helper to convert an expectation of AsyncResult<T> into a promise represented by Deferred<T, Throwable>
  *
  *     i.e.
- *       public fun someAsynActionAsPromise(): Promise<SomeType, Throwable> {
- *           val deferred = deferred<SomeType, Throwable>()
+ *       public fun someAsynActionAsPromise(): Promise<SomeType, Exception> {
+ *           val deferred = deferred<SomeType, Exception>()
  *           vertx.someAsyncAction( promiseResult(deferred) )
  *           return deferred.promise
  *       }
  */
-public fun <T> promiseResult(deferred: Deferred<T, Throwable>): (AsyncResult<T>) -> Unit {
+public fun <T> promiseResult(deferred: Deferred<T, Exception>): (AsyncResult<T>) -> Unit {
     return { completion ->
         if (completion.succeeded()) {
             deferred.resolve(completion.result())
         } else {
-            deferred.reject(completion.cause())
+            if (completion.cause() is Exception) {
+                deferred.reject(completion.cause() as Exception)
+            } else {
+                deferred.reject(WrappedThrowableException(completion.cause()))
+            }
         }
     }
 }

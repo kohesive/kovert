@@ -1,4 +1,4 @@
-package uy.kohesive.kovert.vertx
+package uy.kohesive.kovert.vertx.test
 
 import io.vertx.core.Vertx
 import io.vertx.core.http.*
@@ -6,19 +6,16 @@ import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.VertxUnitRunner
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
-import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.async
-import nl.komponents.kovenant.deferred
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import uy.klutter.core.jdk.mustNotStartWith
 import uy.kohesive.kovert.core.*
+import uy.kohesive.kovert.vertx.*
 import java.util.concurrent.CountDownLatch
 import kotlin.properties.Delegates
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -37,7 +34,7 @@ public class TestVertxBinding {
         vertx = vertx().get()  // use Kotlin wrapper to make sure Kovenent is setup to dispatch with vert.x nicely
         router = Router.router(vertx)
         server = vertx.createHttpServer(HttpServerOptions().setPort(serverPort).setHost("localhost"))
-        client = vertx.createHttpClient(HttpClientOptions().setDefaultPort(serverPort))
+        client = vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(serverPort))
 
         val latch = CountDownLatch(1);
         server.requestHandler { router.accept(it) }.listen { latch.countDown() }
@@ -54,65 +51,12 @@ public class TestVertxBinding {
         latch.await()
     }
 
-    data class HttpClientResult(val statusCode: Int, val statusMessage: String, val body: String?)
-
-    public fun HttpClientRequest.promise(): Promise<HttpClientResult, Throwable> {
-        val deferred = deferred<HttpClientResult, Throwable>()
-        return promise({}, deferred)
-    }
-
-    public fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
-        val deferred = deferred<HttpClientResult, Throwable>()
-        return promise(init, deferred)
-    }
-
-    public fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit, deferred: Deferred<HttpClientResult, Throwable>): Promise<HttpClientResult, Throwable> {
-        try {
-            handler { response ->
-                response.bodyHandler { buff ->
-                    deferred.resolve(HttpClientResult(response.statusCode(), response.statusMessage(), if (buff.length() == 0) null else String(buff.getBytes())))
-                }
-            }
-            exceptionHandler { ex -> deferred.reject(ex) }
-            with (this) { init() }
-            end()
-        }
-        catch (ex: Exception) {
-            deferred.reject(ex)
-        }
-        return deferred.promise
-    }
-
-    public fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
-        val deferred = deferred<HttpClientResult, Throwable>()
-        try {
-            return this.requestAbs(verb, requestUri).promise(init, deferred)
-        }
-        catch (ex: Throwable) {
-            deferred.reject(ex)
-        }
-        return deferred.promise
-    }
-
-    private fun callServer(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, writeJson: String? = null) {
-        val result = client.promiseRequest(verb, "http://localhost:${serverPort}/${path.mustNotStartWith('/')}", {
-            if (writeJson != null) {
-                putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                setChunked(true)
-                write(writeJson)
-            }
-        }).get()
-
-        assertEquals(assertStatus, result.statusCode)
-        assertEquals(assertResponse, result.body)
-    }
-
     @Test public fun testOneControllerWithAllTraits() {
         val controller = OneControllerWithAllTraits()
         router.bindController(controller, "/one")
 
         // with context factory used
-        callServer(HttpMethod.GET, "/one", 200, "Hello")
+        client.testServer(HttpMethod.GET, "/one", 200, "Hello")
         assertTrue(controller.aRequest)
         assertTrue(controller.aDispatch)
         assertNotNull(controller.aDispatchMember)
@@ -122,7 +66,7 @@ public class TestVertxBinding {
         controller.reset()
 
         // no context factory used, extends different context
-        callServer(HttpMethod.GET, "/one/two", 200, "Bye")
+        client.testServer(HttpMethod.GET, "/one/two", 200, "Bye")
         assertTrue(controller.aRequest)
         assertTrue(controller.aDispatch)
         assertNotNull(controller.aDispatchMember)
@@ -130,7 +74,7 @@ public class TestVertxBinding {
         assertFalse(controller.aContextCreated)
 
         // one path is below another
-        callServer(HttpMethod.GET, "/one/two/three", 200, "dunno")
+        client.testServer(HttpMethod.GET, "/one/two/three", 200, "dunno")
         assertTrue(controller.aRequest)
         assertTrue(controller.aDispatch)
         assertNotNull(controller.aDispatchMember)
@@ -143,7 +87,7 @@ public class TestVertxBinding {
         val controller = OneControllerWithAllTraits()
         router.bindController(controller, "/one")
 
-        callServer(HttpMethod.GET, "/one/but/fail500", 500)
+        client.testServer(HttpMethod.GET, "/one/but/fail500", 500)
         assertTrue(controller.aRequest)
         assertTrue(controller.aDispatch)
         assertNotNull(controller.aDispatchMember)
@@ -152,22 +96,22 @@ public class TestVertxBinding {
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/but/fail403", 403)
+        client.testServer(HttpMethod.GET, "/one/but/fail403", 403)
         assertTrue(controller.aFailure)
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/but/fail401", 401)
+        client.testServer(HttpMethod.GET, "/one/but/fail401", 401)
         assertTrue(controller.aFailure)
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/but/fail400", 400)
+        client.testServer(HttpMethod.GET, "/one/but/fail400", 400)
         assertTrue(controller.aFailure)
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/but/fail404", 404)
+        client.testServer(HttpMethod.GET, "/one/but/fail404", 404)
         assertTrue(controller.aFailure)
     }
 
@@ -175,7 +119,7 @@ public class TestVertxBinding {
         val controller = OneControllerWithAllTraits()
         router.bindController(controller, "/one")
 
-        callServer(HttpMethod.GET, "/one/that/has/redirect", 302)
+        client.testServer(HttpMethod.GET, "/one/that/has/redirect", 302)
         assertTrue(controller.aRequest)
         assertTrue(controller.aDispatch)
         assertNotNull(controller.aDispatchMember)
@@ -184,12 +128,12 @@ public class TestVertxBinding {
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/nothing/and/fail", 500)
+        client.testServer(HttpMethod.GET, "/one/nothing/and/fail", 500)
         assertTrue(controller.aFailure)
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/nothing/and/redirect", 302)
+        client.testServer(HttpMethod.GET, "/one/nothing/and/redirect", 302)
         assertFalse(controller.aFailure)
     }
 
@@ -197,11 +141,11 @@ public class TestVertxBinding {
         val controller = OneControllerWithAllTraits()
         router.bindController(controller, "/one")
 
-        callServer(HttpMethod.GET, "/one/promise/results", assertResponse = "I promised, I delivered")
+        client.testServer(HttpMethod.GET, "/one/promise/results", assertResponse = "I promised, I delivered")
 
         controller.reset()
 
-        callServer(HttpMethod.GET, "/one/promise/error", 403)
+        client.testServer(HttpMethod.GET, "/one/promise/error", 403)
         assertTrue(controller.aFailure)
     }
 
@@ -210,42 +154,53 @@ public class TestVertxBinding {
         val controller = JsonController()
         router.bindController(controller, "/api")
 
-        callServer(HttpMethod.GET, "/api/people", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.GET, "/api/people", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
 
-        callServer(HttpMethod.GET, "/api/people/named/Fred", assertResponse = """[{"name":"Fred","age":30}]""")
-        callServer(HttpMethod.GET, "/api/people/named/Tom", assertResponse = """[{"name":"Tom","age":20}]""")
-        callServer(HttpMethod.GET, "/api/people/named/Xyz", 404)
+        client.testServer(HttpMethod.GET, "/api/people/named/Fred", assertResponse = """[{"name":"Fred","age":30}]""")
+        client.testServer(HttpMethod.GET, "/api/people/named/Tom", assertResponse = """[{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.GET, "/api/people/named/Xyz", 404)
 
-        callServer(HttpMethod.GET, "/api/people/age/30", assertResponse = """[{"name":"Fred","age":30}]""")
-        callServer(HttpMethod.GET, "/api/people/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
-        callServer(HttpMethod.GET, "/api/people/age/18", 404)
+        client.testServer(HttpMethod.GET, "/api/people/age/30", assertResponse = """[{"name":"Fred","age":30}]""")
+        client.testServer(HttpMethod.GET, "/api/people/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.GET, "/api/people/age/18", 404)
 
 
-        callServer(HttpMethod.GET, "/api/people/named/Fred/age/30", assertResponse = """[{"name":"Fred","age":30}]""")
-        callServer(HttpMethod.GET, "/api/people/named/Tom/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.GET, "/api/people/named/Fred/age/30", assertResponse = """[{"name":"Fred","age":30}]""")
+        client.testServer(HttpMethod.GET, "/api/people/named/Tom/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
 
-        callServer(HttpMethod.GET, "/api/people2/named/Fred/age/30", assertResponse = """[{"name":"Fred","age":30}]""")
-        callServer(HttpMethod.GET, "/api/people2/named/Tom/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.GET, "/api/people2/named/Fred/age/30", assertResponse = """[{"name":"Fred","age":30}]""")
+        client.testServer(HttpMethod.GET, "/api/people2/named/Tom/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
+    }
+
+    @Test public fun testVerbAlisesMore() {
+        val controller = JsonControllerManyAliases()
+        router.bindController(controller, "/verby")
+
+        client.testServer(HttpMethod.GET, "verby/people1", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertStatus = 200)
+        client.testServer(HttpMethod.GET, "verby/people2", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertStatus = 200)
+
+        client.testServer(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
+
     }
 
     @Test public fun testOtherAnnotations() {
         val controller = AnnotationsInsideController()
         router.bindController(controller, "/api")
 
-        callServer(HttpMethod.GET, "/api/what/is/this/method1", assertResponse = """{"status":"OK"}""")
-        callServer(HttpMethod.GET, "/api/what/is/this/method2", assertResponse = """{"status":"OK"}""")
-        callServer(HttpMethod.GET, "/api/what/is/this/method3", assertResponse = """{"status":"OK"}""")
-        callServer(HttpMethod.GET, "/api/what/is/this/method4", assertResponse = """{"status":"OK"}""")
-        callServer(HttpMethod.GET, "/api/what/is/this/method5/MAYBE", assertResponse = """{"status":"MAYBE"}""")
+        client.testServer(HttpMethod.GET, "/api/what/is/this/method1", assertResponse = """{"status":"OK"}""")
+        client.testServer(HttpMethod.GET, "/api/what/is/this/method2", assertResponse = """{"status":"OK"}""")
+        client.testServer(HttpMethod.GET, "/api/what/is/this/method3", assertResponse = """{"status":"OK"}""")
+        client.testServer(HttpMethod.GET, "/api/what/is/this/method4", assertResponse = """{"status":"OK"}""")
+        client.testServer(HttpMethod.GET, "/api/what/is/this/method5/MAYBE", assertResponse = """{"status":"MAYBE"}""")
     }
 
     @Test public fun testParameterBinding() {
         val controller = ParameterBindingController()
         router.bindController(controller, "/api")
 
-        callServer(HttpMethod.GET, "/api/something/having/simple/parameters?parm1=20&parm2=Fred&parm3=true", assertResponse = """20, Fred, true""")
-        callServer(HttpMethod.GET, "/api/something/having/complex/parameter?parm1.name=Fred&parm1.age=30", assertResponse = """{"name":"Fred","age":30}""")
-        callServer(HttpMethod.GET, "/api/something/having/two/complex/parameters?parm1.name=Fred&parm1.age=30&parm2.name=Tom&parm2.age=20", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.GET, "/api/something/having/simple/parameters?parm1=20&parm2=Fred&parm3=true", assertResponse = """20, Fred, true""")
+        client.testServer(HttpMethod.GET, "/api/something/having/complex/parameter?parm1.name=Fred&parm1.age=30", assertResponse = """{"name":"Fred","age":30}""")
+        client.testServer(HttpMethod.GET, "/api/something/having/two/complex/parameters?parm1.name=Fred&parm1.age=30&parm2.name=Tom&parm2.age=20", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
     }
 
     @Test public fun testJsonBody() {
@@ -253,11 +208,11 @@ public class TestVertxBinding {
         router.bindController(controller, "/api")
 
         // json body
-        callServer(HttpMethod.PUT, "/api/something/as/json", writeJson = """{ "name": "Fred", "age": 30 }""", assertResponse = """{"name":"Fred","age":30}""")
+        client.testServer(HttpMethod.PUT, "/api/something/as/json", writeJson = """{ "name": "Fred", "age": 30 }""", assertResponse = """{"name":"Fred","age":30}""")
 
-        callServer(HttpMethod.PUT, "/api/something/as/json/and/parameters?parm1.name=Tom&parm1.age=20", writeJson = """{ "name": "Fred", "age": 30 }""",assertResponse =  """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.PUT, "/api/something/as/json/and/parameters?parm1.name=Tom&parm1.age=20", writeJson = """{ "name": "Fred", "age": 30 }""", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
 
-        callServer(HttpMethod.PUT, "/api/something/as/json/and/parameters?parm2.name=Fred&parm2.age=30", writeJson = """{ "name": "Tom", "age": 20 }""",assertResponse =  """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
+        client.testServer(HttpMethod.PUT, "/api/something/as/json/and/parameters?parm2.name=Fred&parm2.age=30", writeJson = """{ "name": "Tom", "age": 20 }""", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
 
     }
 }
@@ -365,7 +320,7 @@ public data class TwoContext(private val context: RoutingContext)
 public data class Person(val name: String, val age: Int)
 public data class RestResponse(val status: String = "OK")
 
-@VerbAliases(HttpVerb.GET, "find")
+@VerbAlias("find", HttpVerb.GET)
 public class JsonController {
     public fun OneContext.listPeople(): List<Person> {
         return listOf(Person("Fred", 30), Person("Tom", 20))
@@ -397,11 +352,25 @@ public class JsonController {
     }
 }
 
+
+@VerbAliases(VerbAlias("find", HttpVerb.GET),VerbAlias("search", HttpVerb.GET),VerbAlias("add", HttpVerb.PUT, 201))
+public class JsonControllerManyAliases {
+    public fun OneContext.findPeople1(): List<Person> {
+        return listOf(Person("Fred", 30), Person("Tom", 20))
+    }
+    public fun OneContext.searchPeople2(): List<Person> {
+        return listOf(Person("Fred", 30), Person("Tom", 20))
+    }
+    public fun OneContext.addPerson1(person: Person): Person {
+        return person
+    }
+}
+
 public class AnnotationsInsideController {
-    @Verb(HttpVerb.GET, false)
+    @Verb(HttpVerb.GET, skipPrefix = false)
     public fun OneContext.whatIsThisMethod1(): RestResponse = RestResponse()
 
-    @Verb(HttpVerb.GET, true)
+    @Verb(HttpVerb.GET, skipPrefix = true) // already the default
     public fun OneContext.skipWhatIsThisMethod2(): RestResponse = RestResponse()
 
     @Location("what/is/this/method3")

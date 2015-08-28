@@ -213,6 +213,15 @@ For using Vert.x with [Kovenant](http://kovenant.komponents.nl), you should laun
 
 See [Vertx.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Vertx.kt) for all Vert.x helper functions.
 
+#### Vert.x and KovertVerticle startup
+
+Really, you should configure and launch Vert.x yourself (use helpers above, Klutter for config loading, etc.).  But to act as both a sample, and a quick start helper, There are two classes you can use to startup Vert.x enabled for everything described in this documentation.  Or use these as a samples to write your own:
+
+*  [KovertVertx.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/boot/KovertVertx.kt) 
+*  [KovertVerticle.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/boot/KovertVerticle.kt) 
+
+The sample application [App.kt](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/App.kt) shows one use of these classes.
+
 #### Vert.x Web
 
 A few methods are availble to help using Vert.x web `Session` and `RoutingContext` including safely creating an externalized URL that takes into account proxies / load balancers.  See [VertxWeb.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxWeb.kt) for more.

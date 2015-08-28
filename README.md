@@ -211,8 +211,10 @@ A controller can implement traits to intercept requests, failures, dispatching a
 |----|-----|-------|
 |@VerbAlias|Controller|Set one method prefix alias to be used only by this controller|
 |@VerbAliases|Controller|Set a list of method perfix aliases to be used only by this controller|
-|@Location|Method|Set a specific path for a method, ignoring the method name other than possible for the HTTP Verb|
+|@Location|Method|Set a specific path for a method, ignoring the method name other than for the prefix to infer the HTTP Verb.  Path parameters should be prefixed by a `:` such as `my/path/with/:param`|
 |@Verb|Method|Set the HTTP Verb and default status success code for a method, optionally skipping part of the method name when infering the path|
+
+If is typical to use `@Location` and `@Verb` together on a method, although they can be used individually.
 
 If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or if you want to use the prefix as the first path segment you may use the skipPrefix parameter with value `false` such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` would bind to `some/happy/method` whereas `skipPrefix = true` would bind to `happy/method`.
 

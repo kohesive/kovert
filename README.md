@@ -1,3 +1,5 @@
+[![Kotlin M12](https://img.shields.io/badge/Kotlin-M12%20%40%200.12.1230-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE)
+
 # Kovert
 
 The invisible REST (and soon for web) framework.  

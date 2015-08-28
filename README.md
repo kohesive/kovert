@@ -156,7 +156,13 @@ In this case, it must receive parameters prefixed by `query.` such as `query.tex
 
 ### Body as JSON
 
-If the request body has `Content-Type` of `application/json` then after checking the path, query and form parameters for a parameter, if it is a complex parameter then the body of the document will be bound using Jackson into the object using Jackson data binding.  You can mix all parameter types, and the body will only be used if the others do not provide values for a parameter and it will only be used once.  An error will result if a complex parameter exists that cannot be satsified from the request.
+If a parameter is not satisfied from path, query, or form parameters, and it has `Content-Type` of `application/json` then if it is a complex parameter type it will bound from the body of the request using Jackson data binding.  
+
+You can freely mix all parameter types, and the body will only be used if the others do not provide values for a parameter and it will only be used once.  An error will result if a complex parameter exists that cannot be satsified from the request.
+
+### JSON Response
+
+Any non-String return type becomes JSON automatically using Jackson to serialize the result.  This includes classes, lists, maps, and anything else Jackson can detect and serialize as JSON.
 
 Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  Anything that isn't immediately resonsive should use promises.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `async {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
 
@@ -174,11 +180,7 @@ When using Kovenant promises, please see the section below about Vert.x + Kovena
 
 ### HTML Views 
 
-If you want to render things as HTML, use a return type of String.  That will set the `Content-Type` as HTML and return the string. Soon, view support will come allowing you to add a view annotation that will use the result as a model to render a view given pluggable engines.  More on that soon... 
-
-### JSON Response
-
-Any non-String return type becomes JSON automatically using Jackson to serialize the result.  This includes classes, lists, maps, and anything else Jackson can detect and serialize as JSON.
+If you want to render things as HTML, use a return type of String.  That will set the `Content-Type` as HTML and return the string. Soon, view support will come allowing you to add a view annotation that will use the result as a model to render a view given pluggable engines.  Promises can also be returned for views allowing async rendering.  More on that soon... 
 
 ### Redirects
 

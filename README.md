@@ -25,10 +25,9 @@ To bind a controller is simple.  When you have a route object, call the extensio
 route.bindController(MyControllerClass(), "/api/mystuff")
 ```
 
-And the controller class is any class that contains methods that are extension functions on a class that you wish to be
-your dispatch context.  So you can either decide that dispatch context is the raw `RoutingContext` of Vert.x, or it is much
-better to isolate your code from the raw Vert.x and use simple classes that extract elements of the `RoutingContext` and make
-them available in a type-safe way.  Any class that has a 1 parameter constructor of type `RoutingContext` can be a context class, an example:
+A controller class is any class that contains methods that are extension functions on a class that you wish to be
+your dispatch context.  So you can either decide that dispatch context is the raw `RoutingContext` of Vert.x, or you can isolate your code from the raw Vert.x and use simple classes that wrap elements of the `RoutingContext` to make
+them available in a type-safe way.  Any class that has a 1 parameter constructor of type `RoutingContext` can be a context class, or `RoutingContext` itself.  An example of a custom context:
 
 ```kotlin
 class RestContext(private val routingContext: RoutingContext) {
@@ -36,10 +35,10 @@ class RestContext(private val routingContext: RoutingContext) {
 }
 ```
 
-With the dispatch object selected, write your controller:
+With the dispatch object selected, write your controller.  Here is the CompanyController from the sample app:
 
 ```kotlin
-lass CompanyController(val companyService: CompanyService = Injekt.get()) {
+class CompanyController(val companyService: CompanyService = Injekt.get()) {
     public fun RestContext.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
     public fun RestContext.putCompanyByName(name: String, company: Company): Company {
@@ -62,23 +61,23 @@ lass CompanyController(val companyService: CompanyService = Injekt.get()) {
         return found
     }
 
-    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Set<Company> {
-        val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
-        val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
-        return (byName + byCountry).toSet()
+    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Promise<Set<Company>, Exception> {
+        return async {
+            val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
+            val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
+            (byName + byCountry).toSet()
+        }
     }
 }
 ```
 
-Ok, that looks like normal Kotlin methods that are extension methods on `RestContext` class.  That means each method has access
-to values of the context and only those values.  You can actually have a different context for each method if you want, and
-the correct context will be created for dispatching to that method.
+Great, that class looks like it contains normal Kotlin methods, just that they are extension methods on `RestContext` class.  That means each method has access to values of the context and only those values.  You can actually have a different context class for each method if you want, and the correct context will be created for dispatching to that method.  A context for public methods, one for logged in, another for temporary state during a process flow, etc.
 
-With the controller class, path names are generated from the method names unless you use a `@location` annotation to specify
-a specific path.  Or you use a `@verb` annotation to decide what HTTP verb and resulting success status code should be used.
-Kovert is designed to avoid using those annotations, and they should appear ONLY in special cases.  So how does Kovert decide the path names?
+When binding the controller class, HTTP verb and path names are derived from method names unless you use a `@location` annotation to specify a specific path or the `@verb` annotation to override the HTTP verb and success status code.  Kovert is designed to avoid using those annotations altogether, and they should appear ONLY in special cases.  
 
-First, it camel case parses the method name with the first part indicating the HTTP verb, and the rest being segments of the path.  When it encounters special words, it creates path parameters.  The camel case parsing rules are:
+So without these annotations, how does Kovert decide the path names and parameters?!?
+
+First, it camelCase parses the method name with the first part indicating the HTTP verb, and the rest being segments of the path.  When it encounters special words, it creates path parameters.  The camel case parsing rules are:
 
 ```kotlin
 // thisIsATestOfSplitting = this is a test of splitting
@@ -93,13 +92,13 @@ First, it camel case parses the method name with the first part indicating the H
 // 20________thisAndThat__What = 20 this and that what
 ```
 
-So let's talk first about the HTTP verb.  Obviously the method name prefixes of "get", "put", "post", "delete", "patch" will generate a route that is for the verb of the same name.  But you can see in `KovertConfig` that aliases are defined such as "list" and "view" for HTTP GET, and "remove" also works for "delete".  You can change the alias list in `KovertConfig` using the `addVerbAlias` or `removeVerbAlias` methods.  You can also specify aliases in the `bindController` method (above), or as annotations `@VerbAliases` and `@VerbAlias` on your controller class.  The sample application modifies `KovertConfig` with:
+Using the prefix part of the method, a HTTP verb is inferred.  Obviously prefixes of "get", "put", "post", "delete", "patch" will generate a route that is for the HTTP verb of the same name.  You can see in `KovertConfig` that other aliases are defined such as "list" and "view" for HTTP GET, and "remove" also works same as HTTP DELETE.  You can change the alias list in `KovertConfig` using the `addVerbAlias` or `removeVerbAlias` methods.  You can also specify aliases in the `bindController` method as an optional parameter, or as annotations `@VerbAliases` and `@VerbAlias` on your controller class.  The sample application modifies `KovertConfig` to add "find" as an alias to HTPT GET:
 
 ```kotlin
 KovertConfig.addVerbAlias("find", HttpVerb.GET)
 ```
 
-If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or you can use it as the first path segment using the skipPrefix paramter such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` binding to `some/happy/method`
+If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or if you want to use the prefix as the first path segment you may use the skipPrefix parameter with value `false` such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` which would bind to `some/happy/method` whereas `skipPrefix = true` would bind to `happy/method`.
 
 All routing path and parameter decisions are logged to the current logger, so  you can easily see the results of the `bindController` method.  The example above, would generate these paths when bound at "/api" route:
 
@@ -111,6 +110,17 @@ All routing path and parameter decisions are logged to the current logger, so  y
 |`findCompaniesNamedByName(name: String)`|GET|`api/companies/named/:name`|
 |`findCompaniesLocatedInCountry(country: String)`|GET|`api/companies/located/:country`|
 |`getCompaniesQuery(name: String, country: String)`|GET|`api/companies/query?name=xyz&country=abc`|
+
+Which I can confirm by viewing my log output (notice it logs from my controller class):
+
+```
+10:41:53.068 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding listCompanyByNameEmployees to HTTP GET:200 /api/company/:name/employees w/context RestContext
+10:41:53.070 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesLocatedInCountry to HTTP GET:200 /api/companies/located/:country w/context RestContext
+10:41:53.072 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompaniesQuery to HTTP GET:200 /api/companies/query w/context RestContext
+10:41:53.074 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding putCompanyByName to HTTP PUT:200 /api/company/:name w/context RestContext
+10:41:53.075 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesNamedByName to HTTP GET:200 /api/companies/named/:name w/context RestContext
+10:41:53.078 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompanyByName to HTTP GET:200 /api/company/:name w/context RestContext
+```
 
 ### Path Parameters
 
@@ -249,3 +259,4 @@ View the sample application, and the unit tests for more combinations and exampl
 * View support (annotation that renders the result as a model, plus a return type of ViewAndModel for cases that may use different views from the same method)
 * With View support, people will want to ask for the HREF from a given controller method, should be able to provide that in Kotlin M13, or can provide using the `val getSomeThing = fun MyContext.(param: String): MyObject { ... }` form of declaring a controller method already since `MyClass::getSomething` can reference that value, whereas in the other form, it is not referenceable in M12.  
 * Data binding to support injekt for parameters not available in the incoming data (query, form, path, body)
+* Ignore annotation for extension methods in controller that are not desired

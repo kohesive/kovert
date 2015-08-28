@@ -1,18 +1,14 @@
 # Kovert
 
-The invisible REST (and soon for web) framework.  Kovert is a simple framework that binds your Kotlin classes into your
-Vert.x (and soon Undertow) routers.  It does not try to replace or rebuild these frameworks and only handles the task
-of providing the "last mile" binding to your controllers.  From a fairly normal looking Kotlin class, Kovert can infer
-the route path and parameters.  This is an experiment to see how far we can get without looking like JAX-RS.  If you
-want that, see [Vertx-Nubes](https://github.com/aesteve/vertx-nubes) for Vert-x or [Kikaha](http://kikaha.skullabs.io) for Undertow.
+The invisible REST (and soon for web) framework.  
 
-You are expected to startup, configure and deploy a verticle in which you then call Kovert to bind a controller to a route.  
-Kovert does provide `KovertVertx` and `KovertVerticle` classes that can bootstrap a base application, but almost all use 
-cases beyond testing will provide and control vertx directly.  Kovert contains helper classes for starting Vertx, and 
-uses [Kovenant](http://kovenant.komponents.nl) promises including ensuring that the dispatcher for Kovenant is shared with 
-the worker dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected
-by Vert.x as well.  Kovert also adds builder classes for Vert.x JSON objects, can add a singleton to [Injekt](https://github.com/kohesive/injekt) for the Jackson JSON mapper that is both compatible with Kotlin, and with Vert.x
-JSON objects.  And Kovert can add and unify logging between Vert.x and SLF4j including setting up the Injekt logger factory.
+Kovert is a simple framework that binds your Kotlin classes into your Vert.x 3 (and soon Undertow) routers.  It does not try to replace or rebuild these frameworks and only handles the task of providing the "last mile" binding to your controllers.  From a fairly normal looking Kotlin class, Kovert can infer the route path and parameters.  This is an experiment to see how far we can get without looking like JAX-RS.  If you want tons of annotations instead of happy inference, see [Vertx-Nubes](https://github.com/aesteve/vertx-nubes) for Vert-x and [Kikaha](http://kikaha.skullabs.io) for Undertow, or take a peek at [SparkJava](http://sparkjava.com).
+
+With Kovert, you are expected to startup, configure and deploy a Vert-x verticle in which you then ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics if [Vertx](http://vertx.io/docs/vertx-core/java/) 
+
+If you just want to get started, Kovert does provide `KovertVertx` and `KovertVerticle` classes that can bootstrap a base application, but almost all use cases beyond testing will provide and control Vert-x directly.  
+
+In addition, Kovert contains helper classes for starting Vert-x, and uses [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional Kovert helpers, see below...
 
 ### Learn by Example
 
@@ -148,6 +144,20 @@ In this case, it must receive parameters prefixed by `query.` such as `query.tex
 
 If the request body has `Content-Type` of `application/json` then after checking the path, query and form parameters for a parameter, if it is a complex parameter then the body of the document will be bound using Jackson into the object using Jackson data binding.  You can mix all parameter types, and the body will only be used if the others do not provide values for a parameter and it will only be used once.  An error will result if a complex parameter exists that cannot be satsified from the request.
 
+Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  Anything that isn't immediately resonsive should use promises.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `async {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
+
+```kotlin
+public fun RestContext.getCompaniesQuery(name: String?, country: String?): Promise<Set<Company>, Exception> {
+    return async {
+        val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
+        val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
+        (byName + byCountry).toSet()
+    }
+}
+```
+
+When using Kovenant promises, please see the section below about Vert.x + Kovenant.
+
 ### HTML Views 
 
 If you want to render things as HTML, use a return type of String.  That will set the `Content-Type` as HTML and return the string. Soon, view support will come allowing you to add a view annotation that will use the result as a model to render a view given pluggable engines.  More on that soon... 
@@ -173,6 +183,58 @@ open class HttpErrorNotFound() : HttpErrorCode("not found", 404)
 open class HttpErrorCode(message: String, val code: Int = 500, causedBy: Throwable? = null) : Exception(message, causedBy) {
 }
 ```
+
+### Intercepts
+
+A controller can implement traits to intercept requests, failures, dispatching and create a custom context object factory.  See [VertxTraits.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxTraits.kt) for more information.
+
+### Kovert Helpers
+
+#### Vert.x + Kovenant Promises
+
+For using Vert.x with [Kovenant](http://kovenant.komponents.nl), you should launch Vert.x using one of the Kovert helper functions.  If not using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
+
+See [Vertx.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Vertx.kt) for all Vert.x helper functions.
+
+#### Vert.x Web
+
+A few methods are availble to help using Vert.x web `Session` and `RoutingContext` including safely creating an externalized URL that takes into account proxies / load balancers.  See [VertxWeb.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxWeb.kt) for more.
+
+#### JSON
+
+Kovert also adds builder classes for Vert.x JSON objects (see [VertxJson.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxJson.kt) for more:
+
+```kotlin
+val json = jsonBuilder {
+    // call methods on JsonObject()
+}
+```
+
+Since Vert.x uses an instance of Jackson internally, you can set it up to work with Kotlin and JDK 8 classes by calling this helper method, and then use the instance `Json.mapper` shared with Vert.x for all data binding.
+
+```kotlin
+setupVertxJsonForKotlin()
+```
+
+See [VertxUtil.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxUtil.kt) for the implementation.
+
+#### Logging
+
+Both Vert-x and Hazelcast (used to cluster Vertx) log through facades.  You can setup those facades to go through SLF4j by setting system properties.  Or you can call this helper method that will configure both of those frameworks to talk to SLF4j by using:
+
+```kotlin
+setupVertxLoggingToSlf4j()
+```
+
+See [VertxUtil.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxUtil.kt) for the implementation.
+
+#### Injekt
+
+Both setting up the JSON singleton, and logging can also be done using Injekt.  If you import the Injekt module `VertxInjektables` you will have an `ObjectMapper` singleton available for Jackson data binding that is shared with Vert.x, and Kovenant will be initialized correctly so that promises and async calls work in conjunction with Vert.x thread dispathcing, and you will have a logger factory configured routing any of your injected logging calls through the Vertx logging Facade.  Alterantively you can import the `VertxWithSlf4jInjektables` module for the same benefits, although your logging factory will be setup to be direct to SLF4j for application code.
+
+When using the `KovertVertx` and `KovertVerticle` classes to launch Vert.x and Kovert, they expect configuration objects to be present, or available for injection.  See the sample application for an example of making that configuration available through Injekt.
+
+See [Injektables.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Injektables.kt) for the Injekt modules.
 
 ### More Examples
 

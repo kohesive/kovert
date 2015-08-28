@@ -14,6 +14,24 @@ If you just want to get started without knowing too much, [Kovert does provide `
 
 In addition, Kovert contains [helper classes for starting Vert-x](#vertx--kovenant-promises) that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional Kovert helpers for [JSON](#json), [web](#vertx-web), [logging](#logging), [Injekt](#injekt), and more.  See those topics below...
 
+## Maven Dependnecy (Vert.x Version, requires JDK 8)
+
+First, include the dependency in your Gradle / Maven projects, ones that have Kotlin configured for Kotlin M12 versions `0.12.1218` or `0.12.1230`
+
+**Gradle:**
+```
+compile "uy.kohesive.kovert:kovert-vertx:0.1.+"
+```
+
+**Maven:**
+```
+<dependency>
+    <groupId>uy.kohesive.kovert</groupId>
+    <artifactId>kovert-vertx</artifactId>
+    <version>[0.1.0,0.2.0)</version>
+</dependency>
+```
+
 ### Learn by Example
 
 For a full sample, view the [sample REST application](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/) to see an example that uses the helper classes `KovertVertx` and `KovertVerticle` to startup and run a vertx server using a configuration file.  

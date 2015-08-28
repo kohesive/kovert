@@ -62,7 +62,7 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         return found
     }
 
-    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Promise<Set<Company>, Exception> {
+    public fun RestContext.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
         return async {
             val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
             val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
@@ -112,17 +112,17 @@ All routing path and parameter decisions are logged to the current logger, so  y
 |`listCompanyByNameEmployees(name: String)`|GET|`api/company/:name/employees`|
 |`findCompaniesNamedByName(name: String)`|GET|`api/companies/named/:name`|
 |`findCompaniesLocatedInCountry(country: String)`|GET|`api/companies/located/:country`|
-|`getCompaniesQuery(name: String, country: String)`|GET|`api/companies/query?name=xyz&country=abc`|
+|`getCompaniesSearch(name: String, country: String)`|GET|`api/companies/search?name=xyz&country=abc`|
 
 Which I can confirm by viewing my log output (notice it logs from my controller class):
 
 ```
-10:41:53.068 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding listCompanyByNameEmployees to HTTP GET:200 /api/company/:name/employees w/context RestContext
-10:41:53.070 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesLocatedInCountry to HTTP GET:200 /api/companies/located/:country w/context RestContext
-10:41:53.072 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompaniesQuery to HTTP GET:200 /api/companies/query w/context RestContext
-10:41:53.074 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding putCompanyByName to HTTP PUT:200 /api/company/:name w/context RestContext
-10:41:53.075 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesNamedByName to HTTP GET:200 /api/companies/named/:name w/context RestContext
-10:41:53.078 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompanyByName to HTTP GET:200 /api/company/:name w/context RestContext
+1:21:44.192 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompanyByName to HTTP GET:200 /api/company/:name w/context RestContext
+11:21:44.194 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesNamedByName to HTTP GET:200 /api/companies/named/:name w/context RestContext
+11:21:44.195 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesLocatedInCountry to HTTP GET:200 /api/companies/located/:country w/context RestContext
+11:21:44.196 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompaniesSearch to HTTP GET:200 /api/companies/search w/context RestContext
+11:21:44.198 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding putCompanyByName to HTTP PUT:200 /api/company/:name w/context RestContext
+11:21:44.200 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding listCompanyByNameEmployees to HTTP GET:200 /api/company/:name/employees w/context RestContext
 ```
 
 ### Path Parameters
@@ -168,7 +168,7 @@ Any non-String return type becomes JSON automatically using Jackson to serialize
 Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  Anything that isn't immediately resonsive should use promises.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `async {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
 
 ```kotlin
-public fun RestContext.getCompaniesQuery(name: String?, country: String?): Promise<Set<Company>, Exception> {
+public fun RestContext.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
     return async {
         val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
         val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()

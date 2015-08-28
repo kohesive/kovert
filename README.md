@@ -2,18 +2,20 @@
 
 The invisible REST (and soon for web) framework.  
 
-Kovert is a simple framework that binds your Kotlin classes into your Vert.x 3 (and soon Undertow) routers.  It does not try to replace or rebuild these frameworks and only handles the task of providing the "last mile" binding to your controllers.  From a fairly normal looking Kotlin class, Kovert can infer the route path and parameters.  This is an experiment to see how far we can get without looking like JAX-RS.  If you want tons of annotations instead of happy inference, see [Vertx-Nubes](https://github.com/aesteve/vertx-nubes) for Vert-x and [Kikaha](http://kikaha.skullabs.io) for Undertow, or take a peek at [SparkJava](http://sparkjava.com).
+Kovert is a simple framework that binds your Kotlin classes into your Vert.x 3 (and soon Undertow) routers.  It does not try to replace or rebuild these frameworks and only handles the task of providing the "last mile" binding to your controllers.  From a fairly normal looking Kotlin class, Kovert can infer the route path and parameters.  
 
-With Kovert, you are expected to startup, configure and deploy a Vert-x verticle in which you then ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics if [Vertx](http://vertx.io/docs/vertx-core/java/) 
+This is an experiment to see how far we can get without looking like JAX-RS.  If you want tons of JAX-RS annotations instead of happy Kovert inference, please use [Vertx-Nubes](https://github.com/aesteve/vertx-nubes) for Vert-x and [Kikaha](http://kikaha.skullabs.io) for Undertow, or take a peek at [SparkJava](http://sparkjava.com).
 
-If you just want to get started, Kovert does provide `KovertVertx` and `KovertVerticle` classes that can bootstrap a base application, but almost all use cases beyond testing will provide and control Vert-x directly.  
+With Kovert, you are expected to startup, configure and deploy a Vert-x verticle in which you then ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics of [Vertx](http://vertx.io/docs/vertx-core/java/) 
 
-In addition, Kovert contains helper classes for starting Vert-x, and uses [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional Kovert helpers, see below...
+If you just want to get started without knowing too much, Kovert does provide `KovertVertx` and `KovertVerticle` classes that can bootstrap a base application, but almost all use cases beyond testing will provide and control Vert-x directly.  
+
+In addition, Kovert contains helper classes for starting Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional Kovert helpers for JSON, web, logging, and more.  See those topics below...
 
 ### Learn by Example
 
 For a full sample, view the [sample REST application](vertx-example/) to see an example that uses the helper classes `KovertVertx` and `KovertVerticle` to startup and run a vertx server using a configuration file.  More information is 
-available in the sample.
+available in the sample.  It helps if you are familiar with [Injekt](https://github.com/kohesive/injekt) to completely understand the sample.  Injekt is not required for use of Kovert and can be bypassed, but it helps!
 
 ### Binding a Controller
 

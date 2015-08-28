@@ -36,6 +36,16 @@ class RestContext(private val routingContext: RoutingContext) {
 }
 ```
 
+Or one that uses an API key to validate the request using an Auth service provided by Injekt (really you should build a Vert.x auth service, this is just for an example of a context that can reject a request instead of using an intercept):
+
+```kotlin
+class ApiKeySecuredContext(private val routingContext: RoutingContext) {
+    public val user: User =  Injekt.get<AuthService>()
+                 .apiKeyToUser(routingContext.request().getHeader(HttpHeaders.AUTHORIZATION.toString()) ?: "") 
+                 ?: throw HttpErrorUnauthorized()
+}
+```
+
 With the dispatch object selected, write your controller.  Here is the CompanyController from the sample app:
 
 ```kotlin

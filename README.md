@@ -75,7 +75,9 @@ Great, that class looks like it contains normal Kotlin methods, just that they a
 
 When binding the controller class, HTTP verb and path names are derived from method names unless you use a `@location` annotation to specify a specific path or the `@verb` annotation to override the HTTP verb and success status code.  Kovert is designed to avoid using those annotations altogether, and they should appear ONLY in special cases.  
 
-So without these annotations, how does Kovert decide the path names and parameters?!?
+### Infering HTTP Verb and Path
+
+So without any annotations, how does Kovert decide the path names and parameters?!?
 
 First, it camelCase parses the method name with the first part indicating the HTTP verb, and the rest being segments of the path.  When it encounters special words, it creates path parameters.  The camel case parsing rules are:
 
@@ -98,7 +100,7 @@ Using the prefix part of the method, a HTTP verb is inferred.  Obviously prefixe
 KovertConfig.addVerbAlias("find", HttpVerb.GET)
 ```
 
-If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or if you want to use the prefix as the first path segment you may use the skipPrefix parameter with value `false` such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` which would bind to `some/happy/method` whereas `skipPrefix = true` would bind to `happy/method`.
+If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or if you want to use the prefix as the first path segment you may use the skipPrefix parameter with value `false` such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` would bind to `some/happy/method` whereas `skipPrefix = true` would bind to `happy/method`.
 
 All routing path and parameter decisions are logged to the current logger, so  you can easily see the results of the `bindController` method.  The example above, would generate these paths when bound at "/api" route:
 
@@ -128,9 +130,9 @@ Previously, we mentioned that you can use special words to create path parameter
 
 |word|description|example|result|
 |----|-----------|-------|------|
-|By|next word is path parameter|getCompanyByName(name: String)|HTTP GET company/:name|
-|In|same as By|getCompaniesInCountry(country: String)|HTTP GET companies/:country|
-|With|next word is path segment and then repeated as path parameter|getPersonWithName(name: String)|HTTP GET person/name/:name|
+|By|next word is path parameter|`getCompanyByName(name: String)`|`HTTP GET company/:name`|
+|In|same as By|`getCompaniesInCountry(country: String)`|`HTTP GET companies/:country`|
+|With|next word is path segment and then repeated as path parameter|`getPersonWithName(name: String)`|`HTTP GET person/name/:name`|
 
 The parameter name will then be bound into your method parameters if one of them has a mathing name.  Optional parameters should be nullable.
 

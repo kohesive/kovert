@@ -1,8 +1,9 @@
 package uy.kohesive.kovert.vertx.sample
 
+import uy.klutter.core.common.whenNotNull
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.kovert.core.*
-import uy.kohesive.kovert.vertx.InterceptDispatch
+import uy.kohesive.kovert.core.HttpErrorBadRequest
+import uy.kohesive.kovert.core.HttpErrorNotFound
 
 /**
  * This will create the follow routes (when bound at "api"):
@@ -47,9 +48,5 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         return (byName + byCountry).toSet()
     }
 }
-
-public inline fun <T: Any, R: Any> T?.whenNotNull(thenDo: (T) -> R?): R? = if (this == null) null else thenDo(this)
-
-
 
 

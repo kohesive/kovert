@@ -64,9 +64,9 @@ public class App(val configFile: Path) {
             // everything Kovert wants
             importModule(KovertVertxModule)
             importModule(KovertVerticleModule)
-            // our controllers like services
-            importModule(PeopleService.Companion)
-            importModule(CompanyService.Companion)
+            // our controllers like to use services
+            importModule(MockPeopleService.Companion)
+            importModule(MockCompanyService.Companion)
         }
     }
 
@@ -83,9 +83,4 @@ public class App(val configFile: Path) {
         val configFileLocation = configFile.getParent() // make things relative to the config file location
         return KovertVertx(workingDir = configFileLocation).startVertx(routerInit = initControllers)
     }
-}
-
-// we have a simple RestContext object that wraps routingContext but does little with it
-class RestContext(private val routingContext: RoutingContext) {
-    public val user: User by Delegates.lazy { routingContext.user() }
 }

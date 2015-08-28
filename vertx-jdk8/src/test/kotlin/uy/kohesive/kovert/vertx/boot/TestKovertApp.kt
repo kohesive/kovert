@@ -18,6 +18,7 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.KonfigAndInjektMain
 import uy.kohesive.injekt.config.typesafe.KonfigModule
 import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
+import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 import uy.kohesive.kovert.core.HttpVerb
 import uy.kohesive.kovert.core.KovertConfig
@@ -110,6 +111,7 @@ class PeopleController(val peopleService: PeopleService = Injekt.get()) {
     }
 
     public fun RestContext.putById(id: Int, person: Person): StandardizedResponse {
+        if (id != person.id) throw HttpErrorBadRequest()
         peopleService.writePerson(person); return StandardizedResponse()
     }
 }

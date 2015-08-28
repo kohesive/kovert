@@ -15,6 +15,8 @@ import uy.kohesive.kovert.vertx.InterceptDispatch
  * GET api/companies/named/:name
  * GET api/companies/located/:country
  *
+ * GET api/companies/query?name=xyz&country=abc
+ *
  */
 class CompanyController(val companyService: CompanyService = Injekt.get()) {
     public fun RestContext.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
@@ -38,6 +40,16 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         if (found.isEmpty()) throw HttpErrorNotFound()
         return found
     }
+
+    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Set<Company> {
+        val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
+        val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
+        return (byName + byCountry).toSet()
+    }
 }
+
+public inline fun <T: Any, R: Any> T?.whenNotNull(thenDo: (T) -> R?): R? = if (this == null) null else thenDo(this)
+
+
 
 

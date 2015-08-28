@@ -17,9 +17,9 @@ import uy.kohesive.kovert.vertx.InterceptDispatch
  *
  */
 class CompanyController(val companyService: CompanyService = Injekt.get()) {
-    public fun RestContext.getByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    public fun RestContext.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
-    public fun RestContext.putByName(name: String, company: Company): Company {
+    public fun RestContext.putCompanyByName(name: String, company: Company): Company {
         if (!name.equals(company.name, ignoreCase = true)) {
             throw HttpErrorBadRequest()
         }
@@ -27,13 +27,13 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         return company
     }
 
-    public fun RestContext.listByNameEmployees(name: String): List<Person> {
+    public fun RestContext.listCompanyByNameEmployees(name: String): List<Person> {
         return companyService.listEmployeesOfCompany(name) ?: throw HttpErrorNotFound()
     }
 
-    public fun RestContext.findNamedByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    public fun RestContext.findCompaniesNamedByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
-    public fun RestContext.findLocatedInCountry(country: String): List<Company> {
+    public fun RestContext.findCompaniesLocatedInCountry(country: String): List<Company> {
         val found = companyService.findCompaniesByCountry(country)
         if (found.isEmpty()) throw HttpErrorNotFound()
         return found

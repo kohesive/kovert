@@ -102,7 +102,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                 .filterNot { it.trim().all { it == '_' } }
         val memberVerb = knownVerb ?: prefixToVerbMap.get(parts.first().toLowerCase())?.toVerbStatus()
         val skipCount = if (knownVerb == null || skipPrefix) 1 else 0
-        val memberPath = knownLocation ?: parts.drop(skipCount).joinToString("/").replace("""((^|[\/])by\/)((?:[\w])+)""".toRegex(), { match ->
+        val memberPath = knownLocation ?: parts.drop(skipCount).joinToString("/").replace("""((^|[\/])(?:by|in)\/)((?:[\w])+)""".toRegex(), { match ->
             // by/something = :something
             match.groups.get(2)!!.value + ":" + match.groups.get(3)!!.value
         }).replace("""((^|[\/])with\/)((?:[\w])+)""".toRegex(), { match ->

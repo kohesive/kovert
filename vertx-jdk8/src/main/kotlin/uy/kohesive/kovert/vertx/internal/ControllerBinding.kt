@@ -246,7 +246,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     val disallowVoid = verbAndStatus.verb == HttpVerb.GET
 
-    logger.info("Binding ${controller.javaClass.getSimpleName()}.${memberName} w/verb ${verbAndStatus} to ${finalRoutePath} with context type ${receiverType.getName()}")
+    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.getSimpleName()}")
 
     setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, returnType, paramDefs, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
 }

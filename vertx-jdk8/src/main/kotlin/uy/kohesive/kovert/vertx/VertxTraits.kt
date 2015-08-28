@@ -45,10 +45,3 @@ public interface InterceptRequestFailure : uy.kohesive.kovert.core.CoreIntercept
 public interface ContextFactory<T : Any> : uy.kohesive.kovert.core.CoreContextFactory<RoutingContext, T> {
     override fun createContext(routingContext: RoutingContext): T
 }
-
-/**
- * Optionally setup a router (afer Loger, Cookie, Session handlers, Kovert failure handler are attached, but before body handler and request intercept)
- */
-public interface RouterInit {
-    fun initRouter(router: Router, controllerBasePath: String, controlerBasePathAsWildcard: String)
-}

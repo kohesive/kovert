@@ -34,7 +34,7 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         val useValues = linkedListOf<Any?>()
         var usedBodyJsonAlready = false
 
-        paramDefs.forEach { param ->
+        for (param in paramDefs) {
             val paramValue: Any? = if (isSimpleDataType(param.type)) {
                 // TODO: how does this handle nulls and missing params?
                 JSON.convertValue(request.getParam(param.name), param.type)
@@ -45,7 +45,7 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
 
                 if (request.isExpectMultipart() || tempMap.isNotEmpty() || routeContext.getBodyAsString().isNullOrBlank()) {
                     if (tempMap.isEmpty()) {
-                        routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming form, require variables named ${parmPrefix}*"))
+                        routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming form, require variables named ${parmPrefix}*, maybe content type application/json was forgotten?"))
                         return@handler
                     }
                     JSON.convertValue(tempMap, param.type)

@@ -2,7 +2,7 @@
 
 # Kovert
 
-The invisible REST (and soon for web) framework.  
+The invisible REST (and soon for web) framework.  It is "invisible" since it does not invade your code, not even with annotations.  
 
 Kovert is a simple framework that binds your Kotlin classes into your Vert.x 3 (and soon Undertow) routers.  It does not try to replace or rebuild these frameworks and only handles the task of providing the "last mile" binding to your controllers.  From a fairly normal looking Kotlin class, Kovert can infer the route path and parameters.  
 

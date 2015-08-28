@@ -74,7 +74,7 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
 
 Great, that class looks like it contains normal Kotlin methods, just that they are extension methods on `RestContext` class.  That means each method has access to values of the context and only those values.  You can actually have a different context class for each method if you want, and the correct context will be created for dispatching to that method.  A context for public methods, one for logged in, another for temporary state during a process flow, etc.
 
-When binding the controller class, HTTP verb and path names are derived from method names unless you use a `@location` annotation to specify a specific path or the `@verb` annotation to override the HTTP verb and success status code.  Kovert is designed to avoid using those annotations altogether, and they should appear ONLY in special cases.  
+When binding the controller class, HTTP verb and path names are derived from method names unless you use [special annotations](#annotations) to override the path, path parameters, HTTP verb and success status code.  Kovert is designed to avoid using those annotations altogether, and they should appear ONLY in special cases.  
 
 ### Infering HTTP Verb and Path
 
@@ -101,7 +101,7 @@ Using the prefix part of the method, a HTTP verb is inferred.  Obviously prefixe
 KovertConfig.addVerbAlias("find", HttpVerb.GET)
 ```
 
-If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or if you want to use the prefix as the first path segment you may use the skipPrefix parameter with value `false` such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` would bind to `some/happy/method` whereas `skipPrefix = true` would bind to `happy/method`.
+[Other annotations can be used on classes](#annotations) to tune their behavior and override the path, path parameters and HTTP verbs.
 
 All routing path and parameter decisions are logged to the current logger, so  you can easily see the results of the `bindController` method.  The example above, would generate these paths when bound at "/api" route:
 
@@ -204,6 +204,17 @@ open class HttpErrorCode(message: String, val code: Int = 500, causedBy: Throwab
 ### Intercepts
 
 A controller can implement traits to intercept requests, failures, dispatching and create a custom context object factory.  See [VertxTraits.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxTraits.kt) for more information.
+
+### Annotations
+
+|Name|Where|Purpose|
+|----|-----|-------|
+|@VerbAlias|Controller|Set one method prefix alias to be used only by this controller|
+|@VerbAliases|Controller|Set a list of method perfix aliases to be used only by this controller|
+|@Location|Method|Set a specific path for a method, ignoring the method name other than possible for the HTTP Verb|
+|@Verb|Method|Set the HTTP Verb and default status success code for a method, optionally skipping part of the method name when infering the path|
+
+If you use the `@Verb` annotation on a method, by default the prefix of the method name is parsed and thrown away so it really can be anything.  Or if you want to use the prefix as the first path segment you may use the skipPrefix parameter with value `false` such as `@Verb(HttpVerb.GET, skipPrefix = false) public fun SomeContext.someHappyMethod(): MyResult` would bind to `some/happy/method` whereas `skipPrefix = true` would bind to `happy/method`.
 
 ### Kovert Helpers
 

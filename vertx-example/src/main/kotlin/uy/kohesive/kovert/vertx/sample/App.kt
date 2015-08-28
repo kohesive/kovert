@@ -2,6 +2,7 @@ package uy.kohesive.kovert.vertx.sample
 
 import com.typesafe.config.Config
 import io.vertx.core.http.HttpMethod
+import io.vertx.ext.auth.User
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
@@ -26,6 +27,7 @@ import uy.kohesive.kovert.vertx.boot.VertxDeployment
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.platform.platformStatic
+import kotlin.properties.Delegates
 
 public class App(val configFile: Path) {
     companion object {
@@ -83,5 +85,7 @@ public class App(val configFile: Path) {
     }
 }
 
-// we have a simple RestContext object that wraps routingContext but does nothing with it
-class RestContext(private val routingContext: RoutingContext)
+// we have a simple RestContext object that wraps routingContext but does little with it
+class RestContext(private val routingContext: RoutingContext) {
+    public val user: User by Delegates.lazy { routingContext.user() }
+}

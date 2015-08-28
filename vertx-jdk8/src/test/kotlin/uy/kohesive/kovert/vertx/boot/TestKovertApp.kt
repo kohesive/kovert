@@ -61,19 +61,6 @@ class TestKovertApp {
 }
 
 public class KovertApp(val configFile: Path) {
-    //    companion object {
-    //        platformStatic public fun main(args: Array<String>) {
-    //            if (args.size() != 1) {
-    //                println("Invalid usage.  ConfigFile parameter is required!")
-    //                println()
-    //                println("  usage:  KovertApp <configFile>")
-    //                println()
-    //                System.exit(-1)
-    //            }
-    //            KovertApp(Paths.get(args[0])).start()
-    //        }
-    //    }
-
     // load injektions main this way, because we need to depend on a member varaible "configFile" that must be initialized beforehand
     val injektions = object : KonfigAndInjektMain() {
         override fun configFactory(): Config {

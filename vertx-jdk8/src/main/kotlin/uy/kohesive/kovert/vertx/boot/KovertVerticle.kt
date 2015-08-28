@@ -47,13 +47,12 @@ public class KovertVerticle(val routerInit: Router.()->Unit, val cfg: KovertVert
 
         val sessionStore = if (vertx.isClustered()) ClusteredSessionStore.create(vertx) else LocalSessionStore.create(vertx)
         val sessionHandler = SessionHandler.create(sessionStore).setSessionTimeout(TimeUnit.HOURS.toMillis(cfg.sessionTimeoutInHours.toLong())).setNagHttps(false)
-        fun sessionHandlerFactory() = sessionHandler
 
-        async {
+        try {
             val appRouter = Router.router(vertx) initializedBy { router ->
                 router.route().handler(LoggerHandler.create())
                 router.route().handler(cookieHandlerFactory())
-                router.route().handler(sessionHandlerFactory())
+                router.route().handler(sessionHandler)
 
                 router.routerInit()
             }
@@ -86,13 +85,11 @@ public class KovertVerticle(val routerInit: Router.()->Unit, val cfg: KovertVert
                 }
                 vertx.createHttpServer(httpOptions).requestHandler { appRouter.accept(it) }.listen(listenCfg.port)
                 LOG.warn("${scheme}:${listenCfg.port} server started and ready.")
-
-                onListenerReady(this)
             }
 
-        }.success {
             LOG.warn("API Verticle successfully started")
-        }.fail {  ex ->
+            onListenerReady(this)
+        } catch (ex: Throwable) {
             LOG.error("API Verticle failed to start, fatal error.  ${ex.getMessage()}", ex)
             // terminate the app
             throw RuntimeException("Fatal startup error", ex)

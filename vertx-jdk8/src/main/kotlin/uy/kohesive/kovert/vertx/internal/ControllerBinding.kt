@@ -34,7 +34,7 @@ import kotlin.reflect.jvm.kotlin
  *
  * Optionally the controller can implement interfaces that allow further functionality, see ControllerTraits.kt for more information.
  */
-internal fun bindControllerController(router: Router, kotlinClassAsController: Any, atPath: String = "/", verbAliases: List<PrefixAsVerbWithSuccessStatus> = emptyList()) {
+internal fun bindControllerController(router: Router, kotlinClassAsController: Any, atPath: String, verbAliases: List<PrefixAsVerbWithSuccessStatus> = emptyList()) {
     val path = atPath.mustNotEndWith('/').mustStartWith('/')
     val wildPath = path.mustNotEndWith('/').mustEndWith("/*")
 
@@ -62,13 +62,6 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             }
         }
     }
-
-    if (controller is RouterInit) {
-        controller.initRouter(router, path, wildPath)
-    }
-
-    // set body handlers for this controller for POST and PUT
-    router.route(wildPath).method(HttpMethod.POST).method(HttpMethod.PUT).method(HttpMethod.PATCH).handler(BodyHandler.create().setBodyLimit(8 * 1024))
 
     if (controller is InterceptRequest) {
         router.route(wildPath).handler { context ->
@@ -136,9 +129,9 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                 val dispatchInstance = controller
                 val dispatchFunction = method
                 dispatchFunction.setAccessible(true)
-                val (verb, subPath) = memberNameToPath(method.getName(), verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
-                if (verb != null) {
-                    setupContextAndRouteForMethod(router, logger, controller, path, verb, subPath, method, method.getName(), dispatchInstance, dispatchFunction, paramAnnotations)
+                val (verbAndStatus, subPath) = memberNameToPath(method.getName(), verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+                if (verbAndStatus != null) {
+                    setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, method, method.getName(), dispatchInstance, dispatchFunction, paramAnnotations)
                 }
             }
         }
@@ -164,10 +157,10 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                         logger.debug("Ignoring property ${prop.name}, is of type Function, has instance, has invoke, but is not an extension method or is missing parameter names")
                     }
 
-                    val (verb, subPath) = memberNameToPath(prop.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
-                    if (verb != null) {
+                    val (verbAndStatus, subPath) = memberNameToPath(prop.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+                    if (verbAndStatus != null) {
                         dispatchFunction.setAccessible(true)
-                        setupContextAndRouteForMethod(router, logger, controller, path, verb, subPath, prop, prop.name, dispatchInstance, dispatchFunction, paramAnnotations)
+                        setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, prop, prop.name, dispatchInstance, dispatchFunction, paramAnnotations)
                     }
                     else {
 
@@ -198,7 +191,7 @@ internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to Http
         HttpVerb.PATCH to HttpMethod.PATCH)
 
 @suppress("UNCHECKED_CAST")
-private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verb: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: Method, paramAnnotations: Array<Array<Annotation>>) {
+private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: Method, paramAnnotations: Array<Array<Annotation>>) {
     val receiverType = dispatchFunction.getParameterTypes().first()
 
     val contextFactory = if (controller is ContextFactory<*>) {
@@ -213,7 +206,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
                 TypedContextFactory(contextConstructor as Constructor<Any>)
             }  else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
-                return@setupContextAndRouteForMethod
+                return
             }
         }
     } else {
@@ -226,7 +219,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
                 TypedContextFactory(contextConstructor as Constructor<Any>)
             }  else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
-                return@setupContextAndRouteForMethod
+                return
             }
         }
     }
@@ -242,14 +235,20 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     val fullPath = (rootPath.mustNotEndWith('/') + suffixPath).mustNotEndWith('/')
 
     val finalRoutePath = fullPath.nullIfBlank() ?: "/"
+    val vertxVerb = verbToVertx.get(verbAndStatus.verb)!!
 
-    val route = router.route(finalRoutePath).method(verbToVertx.get(verb.verb)!!)
+    if (verbAndStatus.verb == HttpVerb.POST || verbAndStatus.verb == HttpVerb.PUT || verbAndStatus.verb == HttpVerb.PATCH) {
+        // TODO: configure body max size elsewhere
+        router.route(finalRoutePath).method(verbToVertx.get(verbAndStatus.verb)!!).handler(BodyHandler.create().setBodyLimit(8 * 1024))
+    }
 
-    val disallowVoid = verb.verb == HttpVerb.GET
+    val route = router.route(finalRoutePath).method(vertxVerb)
 
-    logger.info("Binding ${controller.javaClass.getName()}.${memberName} w/verb ${verb} to ${finalRoutePath} with context type ${receiverType.getName()}")
+    val disallowVoid = verbAndStatus.verb == HttpVerb.GET
 
-    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, returnType, paramDefs, contextFactory, disallowVoid, verb.successStatusCode)
+    logger.info("Binding ${controller.javaClass.getName()}.${memberName} w/verb ${verbAndStatus} to ${finalRoutePath} with context type ${receiverType.getName()}")
+
+    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, returnType, paramDefs, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
 }
 
 private fun unwrapInvokeException(rawEx: Throwable): Throwable {

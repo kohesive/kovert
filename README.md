@@ -14,7 +14,7 @@ In addition, Kovert contains helper classes for starting Vert-x that use [Kovena
 
 ### Learn by Example
 
-For a full sample, view the [sample REST application](vertx-example/) to see an example that uses the helper classes `KovertVertx` and `KovertVerticle` to startup and run a vertx server using a configuration file.  More information is 
+For a full sample, view the [sample REST application](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/) to see an example that uses the helper classes `KovertVertx` and `KovertVerticle` to startup and run a vertx server using a configuration file.  More information is 
 available in the sample.  It helps if you are familiar with [Injekt](https://github.com/kohesive/injekt) to completely understand the sample.  Injekt is not required for use of Kovert and can be bypassed, but it helps!
 
 ### Binding a Controller

@@ -2,8 +2,6 @@ package uy.kohesive.kovert.vertx.boot
 
 import com.hazelcast.config
 import com.hazelcast.config.GroupConfig
-import com.typesafe.config.Config
-import io.vertx.core.AbstractVerticle
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
@@ -19,9 +17,7 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.KonfigModule
 import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
 import uy.kohesive.kovert.vertx.*
-import java.nio.file.Path
-import java.nio.file.Paths
-
+import java.nio.file.*
 
 public object KovertVertxModule : KonfigModule, InjektModule {
     override fun KonfigRegistrar.registerConfigurables() {
@@ -41,7 +37,7 @@ public class KovertVertx(val vertxCfg: VertxConfig = Injekt.get(), val workingDi
     /**
      * Returns a Promise<String, Exception> representing the deployment ID of the Kovert verticle
      */
-    public fun startVertx(vertxOptionsInit: VertxOptions.() -> Unit = {}, routerInit: Router.()->Unit = {}): Promise<VertxDeployment, Exception> {
+    public fun startVertx(vertxOptionsInit: VertxOptions.() -> Unit = {}, routerInit: Router.() -> Unit = {}): Promise<VertxDeployment, Exception> {
         LOG.warn("Starting Vertx")
 
         val deferred = deferred<VertxDeployment, Exception>()
@@ -56,9 +52,9 @@ public class KovertVertx(val vertxCfg: VertxConfig = Injekt.get(), val workingDi
                 if (path.notExists()) {
                     throw Exception("Working directory was specified as ${path.toString()}, but does not exist.")
                 }
-                if (System.getProperty("vertx.cwd") == null) {
-                    System.setProperty("vertx.cwd", path.toString())
-                }
+            }
+            if (System.getProperty("vertx.cwd") == null) {
+                System.setProperty("vertx.cwd", calculatedWorkingDir.toString())
             }
 
             val numCores = Runtime.getRuntime().availableProcessors()
@@ -71,7 +67,7 @@ public class KovertVertx(val vertxCfg: VertxConfig = Injekt.get(), val workingDi
 
             val startupPromise = if (vertxOptions.isClustered()) vertxCluster(vertxOptions) else vertx(vertxOptions)
             startupPromise success { vertx ->
-                val completeThePromise = fun (verticle: KovertVerticle):Unit {
+                val completeThePromise = fun(verticle: KovertVerticle): Unit {
                     LOG.warn("KovertVerticle is listening and ready.")
                     deferred.resolve(VertxDeployment(vertx, verticle.deploymentID()))
                 }
@@ -97,9 +93,10 @@ public class KovertVertx(val vertxCfg: VertxConfig = Injekt.get(), val workingDi
 
 
 public data class VertxConfig(val clustered: Boolean = true,
-                       val clusterName: String,
-                       val clusterPass: String,
-                       val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
-                       val fileCaching: FileCacheConfig)
+                              val clusterName: String,
+                              val clusterPass: String,
+                              val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
+                              val fileCaching: FileCacheConfig)
+
 public data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
 

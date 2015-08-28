@@ -116,9 +116,7 @@ if (rootProject != project) {
 subprojects {
     def isExampleApp = name.endsWith("example")
 
-    if (!isExampleApp) {
-        apply plugin: 'com.bmuschko.nexus'
-    }
+    apply plugin: 'com.bmuschko.nexus'
 
     def pomOnlyModule = !(new File("${projectDir.toString()}/src/main/kotlin").exists())
     if (pomOnlyModule) {
@@ -129,13 +127,7 @@ subprojects {
         dependsOn build
     }
 
-    if (isExampleApp) {
-        artifacts {}
-        task subRelease() {
-
-        }
-    }
-    else if (pomOnlyModule) {
+    if (pomOnlyModule) {
         artifacts {}
         task subRelease() {
             dependsOn uploadArchives
@@ -147,44 +139,43 @@ subprojects {
         }
     }
 
-    if (!isExampleApp) {
-        modifyPom {
-            //noinspection GroovyAssignabilityCheck
-            project {
-                name 'Kovert for Kotlin'
-                description 'An invisible covert web framework, shhhhhhh.'
+    modifyPom {
+        //noinspection GroovyAssignabilityCheck
+        project {
+            name 'Kovert for Kotlin'
+            description 'An invisible covert web framework, shhhhhhh.'
+            url 'https://github.com/kohesive/kovert'
+            inceptionYear '2015'
+
+            scm {
                 url 'https://github.com/kohesive/kovert'
-                inceptionYear '2015'
+                connection 'scm:https://github.com/kohesive/kovert'
+                developerConnection 'scm:git@github.com:kohesive/kovert.git'
+            }
 
-                scm {
-                    url 'https://github.com/kohesive/kovert'
-                    connection 'scm:https://github.com/kohesive/kovert'
-                    developerConnection 'scm:git@github.com:kohesive/kovert.git'
-                }
-
-                licenses {
-                    license {
-                        name 'MIT'
-                        url 'https://github.com/kohesive/kovert/blob/master/LICENSE'
-                        distribution 'repo'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id 'apatrida'
-                        name 'Jayson Minard'
-                        email 'jayson.minard@gmail.com'
-                    }
+            licenses {
+                license {
+                    name 'MIT'
+                    url 'https://github.com/kohesive/kovert/blob/master/LICENSE'
+                    distribution 'repo'
                 }
             }
 
+            developers {
+                developer {
+                    id 'apatrida'
+                    name 'Jayson Minard'
+                    email 'jayson.minard@gmail.com'
+                }
+            }
         }
 
-        nexus {
-            sign = true
-        }
     }
+
+    nexus {
+        sign = true
+    }
+
 }
 
 task wrapper(type: Wrapper) {

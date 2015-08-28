@@ -1,29 +1,19 @@
 package uy.kohesive.kovert.vertx.boot
 
 import io.vertx.core.AbstractVerticle
-import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.net.JksOptions
-import io.vertx.ext.web.Router
-import io.vertx.ext.web.RoutingContext
+import io.vertx.ext.web.*
 import io.vertx.ext.web.handler.*
-import io.vertx.ext.web.sstore.ClusteredSessionStore
-import io.vertx.ext.web.sstore.LocalSessionStore
-import nl.komponents.kovenant.async
-import uy.klutter.core.common.initializedBy
-import uy.klutter.core.jdk.mustEndWith
-import uy.klutter.core.jdk.mustNotEndWith
-import uy.klutter.core.jdk.mustStartWith
-import uy.klutter.core.jdk.nullIfBlank
+import io.vertx.ext.web.sstore.*
+import uy.klutter.core.common.*
+import uy.klutter.core.jdk.*
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.KonfigModule
 import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
-import uy.kohesive.kovert.vertx.bindController
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
 public object KovertVerticleModule : KonfigModule, InjektModule {
@@ -36,7 +26,7 @@ public object KovertVerticleModule : KonfigModule, InjektModule {
     }
 }
 
-public class KovertVerticle(val routerInit: Router.()->Unit, val cfg: KovertVerticleConfig = Injekt.get(), val onListenerReady: (KovertVerticle)->Unit = {}) : AbstractVerticle() {
+public class KovertVerticle(val routerInit: Router.() -> Unit, val cfg: KovertVerticleConfig = Injekt.get(), val onListenerReady: (KovertVerticle) -> Unit = {}) : AbstractVerticle() {
     val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(this.javaClass)
 
     override fun start() {
@@ -54,10 +44,11 @@ public class KovertVerticle(val routerInit: Router.()->Unit, val cfg: KovertVert
                 router.route().handler(cookieHandlerFactory())
                 router.route().handler(sessionHandler)
 
+                // give the user a chance to bind more routes, for example their controllers
                 router.routerInit()
             }
 
-            val assetRouter = appRouter initializedBy { router ->
+            appRouter initializedBy { router ->
                 cfg.publicDirs.forEach { mountPoint ->
                     val mountPath = mountPoint.mountAt.mustStartWith('/').mustNotEndWith('/')
                     val mountRoute = if (mountPath.isBlank() || mountPath == "/") {
@@ -70,8 +61,6 @@ public class KovertVerticle(val routerInit: Router.()->Unit, val cfg: KovertVert
                     mountRoute.handler(mountHandler)
                 }
             }
-
-            // appRouter.mountSubRouter("/", assetRouter)
 
             cfg.listeners.forEach { listenCfg ->
                 val httpOptions = HttpServerOptions()
@@ -100,6 +89,7 @@ public class KovertVerticle(val routerInit: Router.()->Unit, val cfg: KovertVert
 public data class KovertVerticleConfig(val listeners: List<HttpListenerConfig>,
                                        val publicDirs: List<DirMountConfig>,
                                        val sessionTimeoutInHours: Int)
+
 public data class HttpListenerConfig(val host: String, val port: Int, val ssl: HttpSslConfig?)
 public data class HttpSslConfig(val enabled: Boolean, val keyStorePath: String?, val keyStorePassword: String?)
 public data class DirMountConfig(val mountAt: String, val dir: String)

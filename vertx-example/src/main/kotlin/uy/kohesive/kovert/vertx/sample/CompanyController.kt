@@ -22,9 +22,9 @@ import uy.kohesive.kovert.core.HttpErrorNotFound
  *
  */
 class CompanyController(val companyService: CompanyService = Injekt.get()) {
-    public fun RestContext.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    public fun ApiKeySecured.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
-    public fun RestContext.putCompanyByName(name: String, company: Company): Company {
+    public fun ApiKeySecured.putCompanyByName(name: String, company: Company): Company {
         if (!name.equals(company.name, ignoreCase = true)) {
             throw HttpErrorBadRequest()
         }
@@ -32,19 +32,19 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         return company
     }
 
-    public fun RestContext.listCompanyByNameEmployees(name: String): List<Person> {
+    public fun ApiKeySecured.listCompanyByNameEmployees(name: String): List<Person> {
         return companyService.listEmployeesOfCompany(name) ?: throw HttpErrorNotFound()
     }
 
-    public fun RestContext.findCompaniesNamedByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    public fun ApiKeySecured.findCompaniesNamedByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
-    public fun RestContext.findCompaniesLocatedInCountry(country: String): List<Company> {
+    public fun ApiKeySecured.findCompaniesLocatedInCountry(country: String): List<Company> {
         val found = companyService.findCompaniesByCountry(country)
         if (found.isEmpty()) throw HttpErrorNotFound()
         return found
     }
 
-    public fun RestContext.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
+    public fun ApiKeySecured.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
         return async {
             val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
             val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()

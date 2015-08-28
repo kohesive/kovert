@@ -15,9 +15,9 @@ import uy.kohesive.kovert.core.HttpErrorNotFound
  *
  */
 class PeopleController(val peopleService: PeopleService = Injekt.get(), val companyService: CompanyService = Injekt.get()) {
-    public fun RestContext.getPersonById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
+    public fun ApiKeySecured.getPersonById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
 
-    public fun RestContext.putPersonById(id: Int, person: Person): Person {
+    public fun ApiKeySecured.putPersonById(id: Int, person: Person): Person {
         if (id != person.id) {
             throw HttpErrorBadRequest()
         }
@@ -25,11 +25,11 @@ class PeopleController(val peopleService: PeopleService = Injekt.get(), val comp
         return person
     }
 
-    public fun RestContext.findPeopleNamedByName(name: String): List<Person> {
+    public fun ApiKeySecured.findPeopleNamedByName(name: String): List<Person> {
         return peopleService.findPersonsByName(name)
     }
 
-    public fun RestContext.listPeopleEmployeedByCompany(company: String): List<Person> {
+    public fun ApiKeySecured.listPeopleEmployeedByCompany(company: String): List<Person> {
         return companyService.listEmployeesOfCompany(company) ?: throw HttpErrorNotFound()
     }
 }

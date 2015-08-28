@@ -248,17 +248,18 @@ See [VertxUtil.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxUtil
 
 Both setting up the JSON singleton, and logging can also be done using Injekt.  If you import the Injekt module `VertxInjektables` you will have an `ObjectMapper` singleton available for Jackson data binding that is shared with Vert.x, and Kovenant will be initialized correctly so that promises and async calls work in conjunction with Vert.x thread dispathcing, and you will have a logger factory configured routing any of your injected logging calls through the Vertx logging Facade.  Alterantively you can import the `VertxWithSlf4jInjektables` module for the same benefits, although your logging factory will be setup to be direct to SLF4j for application code.
 
-When using the `KovertVertx` and `KovertVerticle` classes to launch Vert.x and Kovert, they expect configuration objects to be present, or available for injection.  See the sample application for an example of making that configuration available through Injekt.
+When using the `KovertVertx` and `KovertVerticle` classes to launch Vert.x and Kovert, they expect configuration objects to be present, or available for injection.  
 
-See [Injektables.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Injektables.kt) for the Injekt modules.
+See [Injektables.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Injektables.kt) for the Injekt modules.  Or look at the sample application [App.kt](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/App.kt) which uses Injekt for configuration, data binding, logging and providing services.
 
 ### More Examples
 
-View the sample application, and the unit tests for more combinations and examples of the previously described topics.  
+View the [sample application](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/), and the [unit tests](vertx-jdk8/src/test/kotlin/uy/kohesive/kovert/vertx/) for more combinations of the previously described topics.  
 
 ### Road Map (random order)
 
 * Undertow support as alternative to Vert.x
+* SparkJava support as alternative to Vert.x and Undertow
 * Configurable clauses in method names for substitution patterns (i.e. "By", "In", "With" are substitution patterns)
 * View support (annotation that renders the result as a model, plus a return type of ViewAndModel for cases that may use different views from the same method)
 * With View support, people will want to ask for the HREF from a given controller method, should be able to provide that in Kotlin M13, or can provide using the `val getSomeThing = fun MyContext.(param: String): MyObject { ... }` form of declaring a controller method already since `MyClass::getSomething` can reference that value, whereas in the other form, it is not referenceable in M12.  

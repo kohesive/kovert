@@ -1,5 +1,7 @@
 package uy.kohesive.kovert.vertx.sample
 
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.async
 import uy.klutter.core.common.whenNotNull
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.kovert.core.HttpErrorBadRequest
@@ -42,10 +44,12 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         return found
     }
 
-    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Set<Company> {
-        val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
-        val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
-        return (byName + byCountry).toSet()
+    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Promise<Set<Company>, Exception> {
+        return async {
+            val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
+            val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
+            (byName + byCountry).toSet()
+        }
     }
 }
 

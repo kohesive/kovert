@@ -8,7 +8,7 @@ This is an experiment to see how far we can get without looking like JAX-RS.  If
 
 With Kovert, you are expected to startup, configure and deploy a Vert-x verticle in which you then ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics of [Vertx](http://vertx.io/docs/vertx-core/java/) 
 
-If you just want to get started without knowing too much, Kovert does provide `KovertVertx` and `KovertVerticle` classes that can bootstrap a base application, but almost all use cases beyond testing will provide and control Vert-x directly.  
+If you just want to get started without knowing too much, Kovert does provide [`KovertVertx` and `KovertVerticle` classes](#vertx-and-kovertverticle-startup) that can bootstrap a base application, but almost all use cases beyond testing will provide and control Vert-x directly.  
 
 In addition, Kovert contains helper classes for starting Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional Kovert helpers for JSON, web, logging, and more.  See those topics below...
 

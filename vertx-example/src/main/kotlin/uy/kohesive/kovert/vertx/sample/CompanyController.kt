@@ -18,7 +18,7 @@ import uy.kohesive.kovert.core.HttpErrorNotFound
  * GET api/companies/named/:name
  * GET api/companies/located/:country
  *
- * GET api/companies/query?name=xyz&country=abc
+ * GET api/companies/search?name=xyz&country=abc
  *
  */
 class CompanyController(val companyService: CompanyService = Injekt.get()) {
@@ -44,7 +44,7 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
         return found
     }
 
-    public fun RestContext.getCompaniesQuery(name: String?, country: String?): Promise<Set<Company>, Exception> {
+    public fun RestContext.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
         return async {
             val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
             val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()

@@ -11,3 +11,5 @@ internal val mockData_peopleById = hashMapOf(*listOf(
         Person(3, "Mariana", 22, mockData_companyByName.get("collokia")),
         Person(4, "Lucia", 31, mockData_companyByName.get("bremeld"))).map { it.id to it }.toTypedArray())
 
+
+internal val mockData_validApiKeys = mapOf("apiKey12345" to User(1, "franky"), "apiKey54321" to User(2, "jdavidson"))

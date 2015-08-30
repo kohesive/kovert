@@ -1,11 +1,15 @@
 package uy.kohesive.kovert.vertx.boot.test
 
 import com.typesafe.config.Config
+import io.vertx.core.Vertx
 import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.http.HttpMethod
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.then
 import org.junit.Test
 import uy.klutter.config.typesafe.EnvironmentVariablesConfig
 import uy.klutter.config.typesafe.ReferenceConfig
@@ -18,6 +22,7 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.KonfigAndInjektMain
 import uy.kohesive.injekt.config.typesafe.KonfigModule
 import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
+import uy.kohesive.kovert
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 import uy.kohesive.kovert.core.HttpVerb
@@ -97,9 +102,22 @@ public class KovertApp(val configFile: Path) {
             bindController(CompanyController(), "/company")
             bindController(RootController(), "/")
         }
-        return KovertVertx(workingDir = configFile.getParent()).startVertx(routerInit = initControllers)
+
+        val deferred = deferred<VertxDeployment, Exception>()
+        KovertVertx.start(workingDir = configFile.getParent()) bind { vertx ->
+            KovertVerticle.deploy(vertx, routerInit = initControllers) success { deployId ->
+                deferred.resolve(VertxDeployment(vertx, deployId))
+            }
+        } fail { error ->
+            deferred.reject(error)
+        }
+
+        return deferred.promise
+
     }
 }
+
+data class VertxDeployment(val vertx: Vertx, val deploymentId: String)
 
 class PeopleController(val peopleService: PeopleService = Injekt.get()) {
     public fun RestContext.getById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()

@@ -16,7 +16,7 @@ In addition, Kovert contains [helper classes for starting Vert-x](#vertx--kovena
 
 #### Maven Dependnecy (Vert.x Version, requires JDK 8)
 
-First, include the dependency in your Gradle / Maven projects, ones that have Kotlin configured for Kotlin M12 versions `0.12.1218` or `0.12.1230`
+Include the dependency in your Gradle / Maven projects that are compatible with Kotlin M12 versions `0.12.1218` or `0.12.1230`
 
 **Gradle:**
 ```

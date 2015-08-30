@@ -6,24 +6,17 @@ import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
-import jet.runtime.typeinfo.JetValueParameter
 import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
 import uy.kohesive.kovert.core.*
+import uy.kohesive.kovert.core.reflect.erasedType
+import uy.kohesive.kovert.core.reflect.isAssignableFrom
 import uy.kohesive.kovert.vertx.*
-import java.lang.annotation.ElementType
-import java.lang.annotation.Retention
-import java.lang.annotation.RetentionPolicy
-import java.lang.annotation.Target
-import java.lang.reflect.Constructor
-import java.lang.reflect.InvocationTargetException
-import java.lang.reflect.Method
-import java.lang.reflect.ParameterizedType
-import kotlin.reflect.jvm.java
-import kotlin.reflect.jvm.javaField
-import kotlin.reflect.jvm.kotlin
+import java.lang.reflect.*
+import kotlin.reflect.*
+import kotlin.reflect.jvm.javaType
 
 
 /**
@@ -116,32 +109,40 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     }
 
     // find extension methods that are also members
-    controller.javaClass.getMethods().forEach { method ->
-        val paramAnnotations = method.getParameterAnnotations()
-        if (paramAnnotations != null && paramAnnotations.size() >= 1 && paramAnnotations.size() == method.getParameterCount()) {
-            // TODO: M13 change coming, no more JetValueParameter
-            val possibleReceiverParameter: JetValueParameter? = paramAnnotations[0].firstOrNull { it.annotationType() == kotlin.javaClass<jet.runtime.typeinfo.JetValueParameter>() } as JetValueParameter?
-            if (possibleReceiverParameter != null && possibleReceiverParameter.name == "\$receiver") {
-                val verbAnnotation = method.getAnnotation(kotlin.javaClass<Verb>())
-                val locationAnnotation = method.getAnnotation(kotlin.javaClass<Location>())
+    controller.javaClass.kotlin.memberFunctions.forEach { member ->
+        if (member.parameters.firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
+            val verbAnnotation = member.annotations.firstOrNull { it is Verb } as Verb?
+            val locationAnnotation = member.annotations.firstOrNull { it is Location } as Location?
 
-                // looking for extension functions
-                val dispatchInstance = controller
-                val dispatchFunction = method
-                dispatchFunction.setAccessible(true)
-                val (verbAndStatus, subPath) = memberNameToPath(method.getName(), verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
-                if (verbAndStatus != null) {
-                    setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, method, method.getName(), dispatchInstance, dispatchFunction, paramAnnotations)
-                }
+            // looking for extension functions
+            val dispatchInstance = controller
+            val (verbAndStatus, subPath) = memberNameToPath(member.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+            if (verbAndStatus != null) {
+                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, member.name, dispatchInstance, member)
             }
         }
     }
 
     // find properties that are function references
-    controller.javaClass.kotlin.properties.forEach { prop ->
+    controller.javaClass.kotlin.memberProperties.forEach { prop ->
+        if (kotlin.Function::class.isAssignableFrom(prop.returnType)) {
+            val dispatchInstance = prop.get(controller)
+            if (dispatchInstance != null) {
+                val dispatchClass = dispatchInstance.javaClass
+                val invokeFunction = dispatchClass.kotlin.memberFunctions.firstOrNull { it.name == "invoke" }
+                if (invokeFunction != null) {
+
+                } else {
+                    logger.debug("Ignoring property ${prop.name}, is of type Function, has instance, but no invoke method, really odd") // should never happen
+                }
+            } else {
+                logger.debug("Ignoring property ${prop.name}, is of type Function but has null instance")
+            }
+        }
+        /*
         val propJava = prop.javaField!!
         val typeNameOfField = propJava.getType().getName()
-        // TODO: M13 change coming, Function classes change!
+
         if (typeNameOfField.startsWith((kotlin.jvm.functions.Function0::class.java).getName().mustNotEndWith('0'))) {
             val dispatchInstance = prop.get(controller)
             if (dispatchInstance != null) {
@@ -174,6 +175,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         } else {
             logger.debug("Ignoring property ${prop.name}, is not a reference to a Function")
         }
+        */
     }
 }
 
@@ -190,18 +192,20 @@ internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to Http
         HttpVerb.HEAD to HttpMethod.HEAD,
         HttpVerb.PATCH to HttpMethod.PATCH)
 
+
+
 @suppress("UNCHECKED_CAST")
-private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: Method, paramAnnotations: Array<Array<Annotation>>) {
-    val receiverType = dispatchFunction.getParameterTypes().first()
+private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: KCallable<*>) {
+    val receiverType = dispatchFunction.parameters.first { it.kind == KParameter.Kind.EXTENSION_RECEIVER }.type
 
     val contextFactory = if (controller is ContextFactory<*>) {
-        val declaredFactoryType = controller.javaClass.getGenericInterfaces().filter { it is ParameterizedType }.map { it as ParameterizedType }.filter { it.getRawType() == javaClass<ContextFactory<*>>() }.first()
-        val factoryType = declaredFactoryType.getActualTypeArguments().first() as Class<Any>
+        val factoryFunction = controller.javaClass.kotlin.memberFunctions.first { it.name == "createContext" }
+        val factoryType = factoryFunction.returnType
         if (receiverType.isAssignableFrom(factoryType)) {
             controller
         }
         else {
-            val contextConstructor = receiverType.getConstructor(javaClass<RoutingContext>())
+            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 TypedContextFactory(contextConstructor as Constructor<Any>)
             }  else {
@@ -214,7 +218,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             EmptyContextFactory
         }
         else {
-            val contextConstructor = receiverType.getConstructor(javaClass<RoutingContext>())
+            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 TypedContextFactory(contextConstructor as Constructor<Any>)
             }  else {
@@ -223,13 +227,6 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             }
         }
     }
-
-    val returnType = dispatchFunction.getReturnType()
-    val paramTypes = dispatchFunction.getParameterTypes().drop(1)
-    val paramNames = paramAnnotations.drop(1).map { it.filterIsInstance(javaClass<JetValueParameter>()).first().name }
-
-    val paramDefs = paramNames.zip(paramTypes).map { ParamDef(it.first, it.second) }
-    val paramContainsComplex = paramDefs.any { !isSimpleDataType(it.type) }
 
     val suffixPath = subPath.mustStartWith('/').mustNotEndWith('/')
     val fullPath = (rootPath.mustNotEndWith('/') + suffixPath).mustNotEndWith('/')
@@ -246,9 +243,9 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     val disallowVoid = verbAndStatus.verb == HttpVerb.GET
 
-    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.getSimpleName()}")
+    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName}")
 
-    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, returnType, paramDefs, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
+    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
 }
 
 private fun unwrapInvokeException(rawEx: Throwable): Throwable {

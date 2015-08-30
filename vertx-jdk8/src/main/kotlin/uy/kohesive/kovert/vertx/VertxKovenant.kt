@@ -68,7 +68,7 @@ private object VertxInit {
  *           return deferred.promise
  *       }
  */
-public fun <T> promiseResult(deferred: Deferred<T, Exception>): (AsyncResult<T>) -> Unit {
+public fun <T: Any> promiseResult(deferred: Deferred<T, Exception>): (AsyncResult<T>) -> Unit {
     return { completion ->
         if (completion.succeeded()) {
             deferred.resolve(completion.result())

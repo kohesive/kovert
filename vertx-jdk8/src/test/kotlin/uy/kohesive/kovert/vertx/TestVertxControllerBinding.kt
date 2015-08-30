@@ -263,7 +263,7 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
         return "Hello"
     }
 
-    public fun TwoContext.getTwo(): String {
+    val getTwo = fun TwoContext.(): String {
         return "Bye"
     }
 

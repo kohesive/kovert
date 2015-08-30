@@ -4,7 +4,6 @@ import io.vertx.core.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import kotlin.reflect.KClass
-import kotlin.reflect.jvm.java
 
 
 /**
@@ -193,7 +192,7 @@ public fun Vertx.promiseClose(): Promise<Void, Exception> {
  * vertx dispatching are united, this is the same as doing async { ... } in Kovenant, no need to call on a
  * vertx instance.
  */
-public fun <T> Vertx.promiseExecuteBlocking(blockingCode: () -> T): Promise<T, Exception> {
+public fun <T: Any> Vertx.promiseExecuteBlocking(blockingCode: () -> T): Promise<T, Exception> {
     VertxInit.ensure()
 
     val deferred = deferred<T, Exception>()
@@ -212,7 +211,7 @@ public fun <T> Vertx.promiseExecuteBlocking(blockingCode: () -> T): Promise<T, E
  * vertx dispatching are united, this is the same as doing async { ... } in Kovenant, no need to call on a
  * vertx instance.
  */
-public fun <T> Vertx.executeBlocking(blockingCode: () -> T): Promise<T, Exception> {
+public fun <T: Any> Vertx.executeBlocking(blockingCode: () -> T): Promise<T, Exception> {
     VertxInit.ensure()
 
     val deferred = deferred<T, Exception>()

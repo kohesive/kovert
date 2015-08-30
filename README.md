@@ -161,9 +161,9 @@ Previously, we mentioned that you can use special words to create path parameter
 
 |word|description|example|result|
 |----|-----------|-------|------|
-|By|next word is path parameter|`getCompanyByName(name: String)`|`HTTP GET company/:name`|
-|In|same as By|`getCompaniesInCountry(country: String)`|`HTTP GET companies/:country`|
-|With|next word is path segment and then repeated as path parameter|`getPersonWithName(name: String)`|`HTTP GET person/name/:name`|
+|By|next word is path parameter|`getCompanyByName(name:String)`|HTTP&nbsp;GET&nbsp;company/:name|
+|In|same as By|`getCompaniesInCountry(country:String)`|HTTP&nbsp;GET&nbsp;companies/:country|
+|With|next word is path segment and then repeated as path parameter|`getPersonWithName(name:String)`|HTTP&nbsp;GET&nbsp;person/name/:name|
 
 The parameter name will then be bound into your method parameters if one of them has a mathing name.  Optional parameters should be nullable.
 

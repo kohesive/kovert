@@ -6,11 +6,15 @@ import io.vertx.ext.auth.User
 import io.vertx.ext.web.*
 import io.vertx.ext.web.handler.BodyHandler
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
+import org.slf4j.Logger
 import uy.klutter.config.typesafe.jdk7.FileConfig
 import uy.klutter.config.typesafe.*
 import uy.klutter.core.jdk.*
+import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.*
+import uy.kohesive.kovert
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.*
 import uy.kohesive.kovert.vertx.boot.*
@@ -60,9 +64,10 @@ public class App(val configFile: Path) {
         }
     }
 
-    public fun start(): Promise<VertxDeployment, Exception> {
+    public fun start() {
         // we use the pattern findSomething so add that as a alias for HTTP GET
         KovertConfig.addVerbAlias("find", HttpVerb.GET)
+        val LOG: Logger = Injekt.logger(this)
         val apiMountPoint = "api"
 
         val initControllers = fun Router.(): Unit {
@@ -71,6 +76,14 @@ public class App(val configFile: Path) {
             bindController(CompanyController(), apiMountPoint)
         }
         val configFileLocation = configFile.getParent() // make things relative to the config file location
-        return KovertVertx(workingDir = configFileLocation).startVertx(routerInit = initControllers)
+
+        // startup synchronously...
+        KovertVertx.start(workingDir = configFileLocation) bind { vertx ->
+            KovertVerticle.deploy(vertx, routerInit = initControllers)
+        } success { deploymentId ->
+            LOG.warn("Deployment complete.")
+        } fail { error ->
+            LOG.error("Deployment failed!", error)
+        }
     }
 }

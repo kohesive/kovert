@@ -195,7 +195,9 @@ You can freely mix all parameter types, and the body will only be used if the ot
 
 Any non-String return type becomes JSON automatically using Jackson to serialize the result.  This includes classes, lists, maps, and anything else Jackson can detect and serialize as JSON.
 
-Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  Anything that isn't immediately resonsive should use promises.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `async {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
+### Async and Longer Running Handlers 
+
+Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  EVERYTHING that isn't immediately resonsive should use Promises otherwise you block Vert.x IO thread, whereas a Promise dispathces on the Vert.x worker thread.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `async {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
 
 ```kotlin
 public fun RestContext.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {

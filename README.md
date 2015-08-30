@@ -20,7 +20,7 @@ Include the dependency in your Gradle / Maven projects that are compatible with 
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:0.1.+"
+compile "uy.kohesive.kovert:kovert-vertx:0.2.+"
 ```
 
 **Maven:**
@@ -28,7 +28,7 @@ compile "uy.kohesive.kovert:kovert-vertx:0.1.+"
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
     <artifactId>kovert-vertx</artifactId>
-    <version>[0.1.0,0.2.0)</version>
+    <version>[0.2.0,0.3.0)</version>
 </dependency>
 ```
 

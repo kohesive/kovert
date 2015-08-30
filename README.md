@@ -59,7 +59,7 @@ class RestContext(private val routingContext: RoutingContext) {
 Or one that uses an API key to validate the request using an Auth service provided by Injekt (really you should build a Vert.x auth service, this is just for an example of a context that can reject a request instead of using an intercept):
 
 ```kotlin
-class ApiKeySecuredContext(private val routingContext: RoutingContext) {
+class ApiKeySecured(private val routingContext: RoutingContext) {
     public val user: User =  Injekt.get<AuthService>()
                  .apiKeyToUser(routingContext.request().getHeader(HttpHeaders.AUTHORIZATION.toString()) ?: "") 
                  ?: throw HttpErrorUnauthorized()
@@ -227,13 +227,12 @@ open class HttpErrorForbidden() : HttpErrorCode("forbidden", 403)
 open class HttpErrorBadRequest() : HttpErrorCode("bad request", 400)
 open class HttpErrorNotFound() : HttpErrorCode("not found", 404)
 
-open class HttpErrorCode(message: String, val code: Int = 500, causedBy: Throwable? = null) : Exception(message, causedBy) {
-}
+open class HttpErrorCode(message: String, val code: Int = 500, causedBy: Throwable? = null)
 ```
 
 ### Intercepts
 
-A controller can implement traits to intercept requests, failures, dispatching and create a custom context object factory.  See [VertxTraits.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxTraits.kt) for more information.
+You can intercept by putting another Vert.x handler before you bind the controller and that handler will be called before the controller, and it can decide whether the next handler is called or not.  Or, a controller can implement traits to intercept requests, failures, dispatching and also to create a custom context object factory.  See [VertxTraits.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxTraits.kt) for more information.
 
 ### Annotations
 

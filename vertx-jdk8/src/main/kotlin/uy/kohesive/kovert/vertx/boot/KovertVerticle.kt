@@ -1,12 +1,16 @@
 package uy.kohesive.kovert.vertx.boot
 
 import io.vertx.core.AbstractVerticle
+import io.vertx.core.Verticle
+import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.net.JksOptions
 import io.vertx.ext.web.*
 import io.vertx.ext.web.handler.*
 import io.vertx.ext.web.sstore.*
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import uy.klutter.core.common.*
 import uy.klutter.core.jdk.*
 import uy.kohesive.injekt.Injekt
@@ -14,6 +18,7 @@ import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.KonfigModule
 import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
+import uy.kohesive.kovert.vertx.promiseDeployVerticle
 import java.util.concurrent.TimeUnit
 
 public object KovertVerticleModule : KonfigModule, InjektModule {
@@ -26,8 +31,30 @@ public object KovertVerticleModule : KonfigModule, InjektModule {
     }
 }
 
-public class KovertVerticle(val routerInit: Router.() -> Unit, val cfg: KovertVerticleConfig = Injekt.get(), val onListenerReady: (KovertVerticle) -> Unit = {}) : AbstractVerticle() {
-    val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(this.javaClass)
+public class KovertVerticle private constructor (val cfg: KovertVerticleConfig, val routerInit: Router.() -> Unit, val onListenerReady: (String)->Unit) : AbstractVerticle() {
+    companion object {
+        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(this.javaClass)
+
+        /**
+         * Deploys a KovertVerticle into a Vertx instance and returns a Promise representing the deployment ID.
+         * The HTTP listeners are active before the promise completes.
+         */
+        public fun deploy(vertx: Vertx, cfg: KovertVerticleConfig = Injekt.get(), routerInit: Router.() -> Unit): Promise<String, Exception> {
+            val deferred = deferred<String, Exception>()
+            val completeThePromise = fun(id: String): Unit {
+                LOG.warn("KovertVerticle is listening and ready.")
+                deferred.resolve(id)
+            }
+
+            vertx.promiseDeployVerticle(KovertVerticle(cfg ,routerInit, completeThePromise)) success { deploymentId ->
+                LOG.warn("KovertVerticle deployed as ${deploymentId}")
+            } fail { failureException ->
+                LOG.error("Vertx deployment failed due to ${failureException.getMessage()}", failureException)
+                deferred.reject(failureException)
+            }
+            return deferred.promise
+        }
+    }
 
     override fun start() {
         LOG.warn("API Verticle starting")
@@ -77,7 +104,7 @@ public class KovertVerticle(val routerInit: Router.() -> Unit, val cfg: KovertVe
             }
 
             LOG.warn("API Verticle successfully started")
-            onListenerReady(this)
+            onListenerReady(deploymentID())
         } catch (ex: Throwable) {
             LOG.error("API Verticle failed to start, fatal error.  ${ex.getMessage()}", ex)
             // terminate the app

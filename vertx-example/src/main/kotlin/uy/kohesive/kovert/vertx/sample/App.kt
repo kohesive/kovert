@@ -11,6 +11,7 @@ import org.slf4j.Logger
 import uy.klutter.config.typesafe.jdk7.FileConfig
 import uy.klutter.config.typesafe.*
 import uy.klutter.core.jdk.*
+import uy.klutter.vertx.VertxWithSlf4jInjektables
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.*

@@ -13,12 +13,12 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import uy.klutter.core.common.*
 import uy.klutter.core.jdk.*
+import uy.klutter.vertx.promiseDeployVerticle
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.config.typesafe.KonfigModule
 import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
-import uy.kohesive.kovert.vertx.promiseDeployVerticle
 import java.util.concurrent.TimeUnit
 
 public object KovertVerticleModule : KonfigModule, InjektModule {

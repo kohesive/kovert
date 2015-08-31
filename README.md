@@ -14,7 +14,7 @@ For starting an application with Kovert, you have two options:
 
 * Alternatively, if you just want to get started without knowing too much, [Kovert provides `KovertVertx` and `KovertVerticle` classes](#vertx-and-kovertverticle-startup) that can bootstrap a base application, but this acts more as an example starting point from which you should build your own.
 
-In addition, Kovert uses [Klutter/Vertx3](https://github.com/klutter/klutter/vertx3) module which contains helper classes for working with Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional helpers for Vert.x JSON objects, the logging facade, web, and integration with [Injekt](#injekt), and more.
+In addition, Kovert uses [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) module which contains helper classes for working with Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional helpers for Vert.x JSON objects, the logging facade, web, and integration with [Injekt](#injekt), and more.
 
 #### Maven Dependnecy (Vert.x Version, requires JDK 8)
 
@@ -255,9 +255,9 @@ If you use the `@Verb` annotation on a method, by default the prefix of the meth
 
 #### Vert.x + Kovenant Promises
 
-For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/klutter/klutter/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
+For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
 
-See [Klutter/Vertx3](https://github.com/klutter/klutter/vertx3) for all Vert.x helper functions include JSON, Vertx-Web, Logging and Injekt modules.
+See [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) for all Vert.x helper functions include JSON, Vertx-Web, Logging and Injekt modules.
 
 #### Vert.x and KovertVerticle startup
 

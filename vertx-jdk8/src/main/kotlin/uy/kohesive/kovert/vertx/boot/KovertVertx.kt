@@ -11,6 +11,9 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import uy.klutter.core.common.verifiedBy
 import uy.klutter.core.jdk7.notExists
+import uy.klutter.vertx.WrappedThrowableException
+import uy.klutter.vertx.vertx
+import uy.klutter.vertx.vertxCluster
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar

@@ -16,6 +16,9 @@ import uy.klutter.config.typesafe.ReferenceConfig
 import uy.klutter.config.typesafe.SystemPropertiesConfig
 import uy.klutter.config.typesafe.jdk7.FileConfig
 import uy.klutter.config.typesafe.loadConfig
+import uy.klutter.vertx.VertxInjektables
+import uy.klutter.vertx.promiseClose
+import uy.klutter.vertx.promiseUndeploy
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar

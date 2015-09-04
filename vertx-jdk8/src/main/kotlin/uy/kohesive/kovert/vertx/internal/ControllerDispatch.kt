@@ -51,7 +51,7 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                         JSON.convertValue(request.getParam(param.name), TypeFactory.defaultInstance().constructType(param.type.javaType))
                     }
                     catch (ex: Exception) {
-                        throw RuntimeException("Data binding failed due to: ${ex.getMessage()?.replace('\n',' ')?.replace('\r',' ')}")
+                        throw RuntimeException("Data binding failed due to: ${ex.getMessage()}")
                     }
                     temp
                 } else {
@@ -70,11 +70,11 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json") {
                         routeContext.fail(HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
                     } else {
-                        val temp: Any? = try {
+                        val temp: Any = try {
                             usedBodyJsonAlready = true
                             JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.javaType))
                         } catch (ex: Throwable) {
-                            routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.getMessage()?.replace('\n',' ')?.replace('\r',' ')}", causedBy = ex))
+                            routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.getMessage()}", causedBy = ex))
                             return@handler
                         }
                         temp

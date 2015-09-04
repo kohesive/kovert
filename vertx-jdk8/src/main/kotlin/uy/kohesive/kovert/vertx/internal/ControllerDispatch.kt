@@ -39,37 +39,54 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         val useValues = linkedListOf<Any?>()
         var usedBodyJsonAlready = false
 
-        for (param in dispatchFunction.parameters.filter { it.kind == KParameter.Kind.VALUE }) {
-            val paramValue: Any? = if (isSimpleDataType(param.type)) {
-                // TODO: how does this handle nulls and missing params?
-                JSON.convertValue(request.getParam(param.name), TypeFactory.defaultInstance().constructType(param.type.javaType))
-            } else {
-                // see if parameter has prefixed values in the input parameters that match
-                val parmPrefix = param.name + "."
-                val tempMap = request.params().entries().filter { it.getKey().startsWith(parmPrefix) }.map { it.getKey().mustNotStartWith(parmPrefix) to it.getValue() }.toMap()
-
-                if (request.isExpectMultipart() || tempMap.isNotEmpty() || routeContext.getBodyAsString().isNullOrBlank()) {
-                    if (tempMap.isEmpty()) {
-                        routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming form, require variables named ${parmPrefix}*, maybe content type application/json was forgotten?"))
-                        return@handler
+        try {
+            for (param in dispatchFunction.parameters) {
+                val paramValue: Any? = if (param.kind == KParameter.Kind.INSTANCE) {
+                    dispatchInstance
+                } else if (param.kind == KParameter.Kind.EXTENSION_RECEIVER) {
+                    requestContext
+                } else if (isSimpleDataType(param.type)) {
+                    // TODO: how does this handle nulls and missing params?
+                    val temp: Any = try {
+                        JSON.convertValue(request.getParam(param.name), TypeFactory.defaultInstance().constructType(param.type.javaType))
                     }
-                    JSON.convertValue(tempMap, TypeFactory.defaultInstance().constructType(param.type.javaType))
-                } else if (usedBodyJsonAlready) {
-                    routeContext.fail(HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
-                } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json") {
-                    routeContext.fail(HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
-                } else {
-                    val temp: Any? = try {
-                        usedBodyJsonAlready = true
-                        JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.javaType))
-                    } catch (ex: Throwable) {
-                        routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.getMessage()}", causedBy = ex))
-                        return@handler
+                    catch (ex: Exception) {
+                        throw RuntimeException("Data binding failed due to: ${ex.getMessage()?.replace('\n',' ')?.replace('\r',' ')}")
                     }
                     temp
+                } else {
+                    // see if parameter has prefixed values in the input parameters that match
+                    val parmPrefix = param.name + "."
+                    val tempMap = request.params().entries().filter { it.getKey().startsWith(parmPrefix) }.map { it.getKey().mustNotStartWith(parmPrefix) to it.getValue() }.toMap()
+
+                    if (request.isExpectMultipart() || tempMap.isNotEmpty() || routeContext.getBodyAsString().isNullOrBlank()) {
+                        if (tempMap.isEmpty()) {
+                            routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming form, require variables named ${parmPrefix}*, maybe content type application/json was forgotten?"))
+                            return@handler
+                        }
+                        JSON.convertValue(tempMap, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                    } else if (usedBodyJsonAlready) {
+                        routeContext.fail(HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
+                    } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json") {
+                        routeContext.fail(HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
+                    } else {
+                        val temp: Any? = try {
+                            usedBodyJsonAlready = true
+                            JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.javaType))
+                        } catch (ex: Throwable) {
+                            routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.getMessage()?.replace('\n',' ')?.replace('\r',' ')}", causedBy = ex))
+                            return@handler
+                        }
+                        temp
+                    }
                 }
+                useValues.add(paramValue)
             }
-            useValues.add(paramValue)
+        }
+        catch (rawEx: Throwable) {
+            val ex = unwrapInvokeException(rawEx)
+            routeContext.fail(ex)
+            return@handler
         }
 
         fun sendResponse(result: Any?) {
@@ -102,8 +119,6 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
             }
         }
-
-        useValues.addFirst(requestContext) // put the $receiver on the front
 
         try {
             // dispatch via intercept, or directly depending on the controller

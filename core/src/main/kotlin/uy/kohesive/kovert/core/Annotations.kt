@@ -23,7 +23,7 @@ public class VerbAliases(vararg val value: VerbAlias)
  * Override prefix with a specific HTTP Verb.  By default the prefix part of the method name is skipped and ingored for both the verb and not included in the path.
  */
 annotation(retention = AnnotationRetention.RUNTIME)
-target(AnnotationTarget.FUNCTION)
+target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 public class Verb(val verb: HttpVerb, val successStatusCode: Int = 200, val skipPrefix: Boolean = true)
 
 /**

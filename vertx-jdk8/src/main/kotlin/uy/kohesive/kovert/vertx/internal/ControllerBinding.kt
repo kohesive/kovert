@@ -6,6 +6,7 @@ import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
+import uy.klutter.core.common.initializedBy
 import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
@@ -16,7 +17,9 @@ import uy.kohesive.kovert.core.reflect.isAssignableFrom
 import uy.kohesive.kovert.vertx.*
 import java.lang.reflect.*
 import kotlin.reflect.*
+import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaType
+import kotlin.reflect.jvm.reflect
 
 
 /**
@@ -109,8 +112,8 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     }
 
     // find extension methods that are also members
-    controller.javaClass.kotlin.memberFunctions.forEach { member ->
-        if (member.parameters.firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
+    controller.javaClass.kotlin.memberExtensionFunctions.forEach { member ->
+        if (member.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE || member.parameters.drop(1).firstOrNull()?.kind  == KParameter.Kind.EXTENSION_RECEIVER) {
             val verbAnnotation = member.annotations.firstOrNull { it is Verb } as Verb?
             val locationAnnotation = member.annotations.firstOrNull { it is Location } as Location?
 
@@ -125,57 +128,64 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
 
     // find properties that are function references
     controller.javaClass.kotlin.memberProperties.forEach { prop ->
-        if (kotlin.Function::class.isAssignableFrom(prop.returnType)) {
+        if (Function::class.isAssignableFrom(prop.returnType)) {
             val dispatchInstance = prop.get(controller)
-            if (dispatchInstance != null) {
-                val dispatchClass = dispatchInstance.javaClass
-                val invokeFunction = dispatchClass.kotlin.memberFunctions.firstOrNull { it.name == "invoke" }
-                if (invokeFunction != null) {
-
-                } else {
-                    logger.debug("Ignoring property ${prop.name}, is of type Function, has instance, but no invoke method, really odd") // should never happen
+            if (dispatchInstance != null && dispatchInstance is Function<*>) {
+                try {
+                    val callable = KFunctionKt9005WorkAround(prop, dispatchInstance)
+                    if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
+                        val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
+                        val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
+                        val (verbAndStatus, subPath) = memberNameToPath(prop.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+                        if (verbAndStatus != null) {
+                            setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, prop, prop.name, dispatchInstance, callable)
+                        }
+                    }
+                } catch (ex: IllegalStateException) {
+                    logger.debug("Ignoring property ${prop.name}, is of type Function but doesn't appear to have KFunction meta-data (Internal Kotlin thing)")
                 }
             } else {
                 logger.debug("Ignoring property ${prop.name}, is of type Function but has null instance")
             }
         }
-        /*
-        val propJava = prop.javaField!!
-        val typeNameOfField = propJava.getType().getName()
 
-        if (typeNameOfField.startsWith((kotlin.jvm.functions.Function0::class.java).getName().mustNotEndWith('0'))) {
-            val dispatchInstance = prop.get(controller)
-            if (dispatchInstance != null) {
-                val dispatchInstanceMethods = dispatchInstance.javaClass.getMethods()
-                val dispatchFunction = dispatchInstance.javaClass.getMethods().filter { method -> method.getName() == "invoke" }.filter { it.getParameterAnnotations().all { it.any { it.annotationType() == kotlin.javaClass<jet.runtime.typeinfo.JetValueParameter>() } } }.firstOrNull()
-                if (dispatchFunction != null) {
-                    val verbAnnotation = propJava.getAnnotation(kotlin.javaClass<Verb>())
-                    val locationAnnotation = propJava.getAnnotation(kotlin.javaClass<Location>())
+    }
+}
 
-                    val paramAnnotations = dispatchFunction.getParameterAnnotations()
-                    val receiverName = paramAnnotations[0].first { it.annotationType() == kotlin.javaClass<jet.runtime.typeinfo.JetValueParameter>() } as JetValueParameter
-                    if (receiverName.name != "\$receiver") {
-                        logger.debug("Ignoring property ${prop.name}, is of type Function, has instance, has invoke, but is not an extension method or is missing parameter names")
-                    }
+class KFunctionKt9005WorkAround<out R: Any?>(private val _member: KProperty<R>, private val _functionInstance: Function<R>): KCallable<R> {
+    private val _reflectedFunction: KFunction<R> = _functionInstance.reflect() ?: throw IllegalStateException("The function instance isn't reflect-able")
+    private val _invokeMethod: Method =  _functionInstance.javaClass.getMethods().filter {  method ->
+                                                 method.getName() == "invoke" &&
+                                                 !method.isBridge &&
+                                                 method.parameterCount == _reflectedFunction.parameters.size()
+                                         }.first() initializedBy { it.isAccessible = true }
 
-                    val (verbAndStatus, subPath) = memberNameToPath(prop.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
-                    if (verbAndStatus != null) {
-                        dispatchFunction.setAccessible(true)
-                        setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, prop, prop.name, dispatchInstance, dispatchFunction, paramAnnotations)
-                    }
-                    else {
-
-                    }
-                } else {
-                    logger.debug("Ignoring property ${prop.name}, is of type Function, has instance, but no invoke method we can recognize with parameter names")
-                }
-            } else {
-                logger.debug("Ignoring property ${prop.name}, is of type Function but has no obvious instance")
+    private val _parameters: List<KParameter> = run {
+        _invokeMethod.parameters.withIndex().zip(_reflectedFunction.parameters).map {
+            object : KParameter {
+                override val index: Int = it.first.index
+                override val isOptional: Boolean = it.second.isOptional
+                override val kind: KParameter.Kind = it.second.kind
+                override val name: String? = it.second.name
+                override val type: KType = it.first.value.getType().kotlin.defaultType
+                override val annotations: List<Annotation> = _member.annotations
             }
-        } else {
-            logger.debug("Ignoring property ${prop.name}, is not a reference to a Function")
         }
-        */
+    }
+
+    override val name: String = _member.name
+    override val parameters: List<KParameter> = _parameters
+    override val returnType: KType = _invokeMethod.returnType.kotlin.defaultType
+    override val annotations: List<Annotation> = _member.annotations
+
+    @suppress("UNCHECKED_CAST")
+    override fun call(vararg args: Any?): R {
+        return _invokeMethod.invoke(_functionInstance, *args) as R
+    }
+
+    @suppress("UNCHECKED_CAST")
+    override fun callBy(args: Map<KParameter, Any?>): R {
+        throw UnsupportedOperationException()
     }
 }
 
@@ -207,7 +217,8 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
-                TypedContextFactory(contextConstructor as Constructor<Any>)
+                // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
+                TypedContextFactory(contextConstructor.javaConstructor!!)
             }  else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
                 return
@@ -220,7 +231,8 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
-                TypedContextFactory(contextConstructor as Constructor<Any>)
+                // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
+                TypedContextFactory(contextConstructor.javaConstructor!!)
             }  else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
                 return

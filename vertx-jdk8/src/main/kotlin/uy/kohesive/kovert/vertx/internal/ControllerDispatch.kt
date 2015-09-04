@@ -21,6 +21,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 import java.util.*
 import kotlin.reflect.KCallable
+import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaType
 
 
@@ -38,7 +39,7 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         val useValues = linkedListOf<Any?>()
         var usedBodyJsonAlready = false
 
-        for (param in dispatchFunction.parameters) {
+        for (param in dispatchFunction.parameters.filter { it.kind == KParameter.Kind.VALUE }) {
             val paramValue: Any? = if (isSimpleDataType(param.type)) {
                 // TODO: how does this handle nulls and missing params?
                 JSON.convertValue(request.getParam(param.name), TypeFactory.defaultInstance().constructType(param.type.javaType))
@@ -107,9 +108,9 @@ private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         try {
             // dispatch via intercept, or directly depending on the controller
             val result: Any? = if (controller is InterceptDispatch<*>) {
-                (controller as InterceptDispatch<Any>)._internal(requestContext, member, {  dispatchFunction.call(dispatchInstance, *useValues.toArray()) })
+                (controller as InterceptDispatch<Any>)._internal(requestContext, member, {  dispatchFunction.call(*useValues.toArray()) })
             } else {
-                dispatchFunction.call(dispatchInstance, *useValues.toArray())
+                dispatchFunction.call(*useValues.toArray())
             }
 
             // if a promise, need to wait for it to succeed or fail

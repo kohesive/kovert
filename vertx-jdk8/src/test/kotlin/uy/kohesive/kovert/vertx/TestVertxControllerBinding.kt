@@ -215,6 +215,24 @@ public class TestVertxBinding {
         client.testServer(HttpMethod.PUT, "/api/something/as/json/and/parameters?parm2.name=Fred&parm2.age=30", writeJson = """{ "name": "Tom", "age": 20 }""", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
 
     }
+
+    @Test public fun testMemberVarFunctions() {
+        val controller = MemberVarController()
+        router.bindController(controller, "/api")
+
+        client.testServer(HttpMethod.GET, "/api/first/test", assertResponse = "FirstTest")
+        client.testServer(HttpMethod.GET, "/api/second/test?parm=99", assertResponse = "SecondTest 99")
+        client.testServer(HttpMethod.POST, "/api/third/test?parm=dog", assertResponse = "ThirdTest dog")
+    }
+}
+
+public class MemberVarController() {
+    public val getFirstTest = fun TwoContext.(): String = "FirstTest"
+    public val getSecondTest = fun TwoContext.(parm: Int): String = "SecondTest ${parm}"
+
+    @Location("third/test")
+    @Verb(HttpVerb.POST)
+    public val getThirdyBaby = fun TwoContext.(parm: String): String = "ThirdTest ${parm}"
 }
 
 public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<Any>, InterceptRequestFailure, ContextFactory<OneContext> {
@@ -263,7 +281,7 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
         return "Hello"
     }
 
-    val getTwo = fun TwoContext.(): String {
+    public fun TwoContext.getTwo(): String {
         return "Bye"
     }
 

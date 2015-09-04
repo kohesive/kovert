@@ -12,7 +12,7 @@ interface CompanyService {
 }
 
 class MockCompanyService(val peopleService: PeopleService = Injekt.get()): CompanyService {
-    companion object : InjektModule {
+    companion object Injektables : InjektModule {
         override fun InjektRegistrar.registerInjectables() {
             addSingletonFactory<CompanyService> { MockCompanyService() }
         }

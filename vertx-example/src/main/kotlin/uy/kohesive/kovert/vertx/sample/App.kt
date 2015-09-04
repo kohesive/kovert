@@ -59,9 +59,9 @@ public class App(val configFile: Path) {
             importModule(KovertVertxModule)
             importModule(KovertVerticleModule)
             // our controllers like to use services
-            importModule(MockAuthService.Companion)
-            importModule(MockPeopleService.Companion)
-            importModule(MockCompanyService.Companion)
+            importModule(MockAuthService.Injektables)
+            importModule(MockPeopleService.Injektables)
+            importModule(MockCompanyService.Injektables)
         }
     }
 

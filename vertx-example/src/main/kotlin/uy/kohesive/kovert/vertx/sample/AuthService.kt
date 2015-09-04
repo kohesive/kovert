@@ -8,7 +8,7 @@ interface AuthService  {
 }
 
 class MockAuthService: AuthService {
-    companion object : InjektModule {
+    companion object Injektables: InjektModule {
         override fun InjektRegistrar.registerInjectables() {
             addSingletonFactory<AuthService> { MockAuthService() }
         }

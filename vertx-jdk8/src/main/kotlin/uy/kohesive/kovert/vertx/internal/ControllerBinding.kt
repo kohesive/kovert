@@ -279,11 +279,11 @@ private fun handleExceptionResponse(controller: Any, context: RoutingContext, ra
         }
         is HttpErrorCode -> {
             logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.getMessage()}", if (ex.code == 500) ex else null)
-            context.response().setStatusCode(ex.code).setStatusMessage(ex.getMessage()).end()
+            context.response().setStatusCode(ex.code).setStatusMessage(ex.getMessage()?.replace('\n', ' ')?.replace('\r', ' ')).end()
         }
         else -> {
             logger.error("HTTP CODE 500 - ${context.normalisedPath()} - ${ex.getMessage()}", ex)
-            context.response().setStatusCode(500).setStatusMessage(ex.getMessage()).end()
+            context.response().setStatusCode(500).setStatusMessage(ex.getMessage()?.replace('\n', ' ')?.replace('\r', ' ')).end()
         }
     }
 }

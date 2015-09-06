@@ -1,4 +1,13 @@
 =========================================================
+2015-08-31 v0.3.1 release
+=========================================================
+
+Exception handler was putting full exception text into the HTTP status message header.  That isn't a good practice, it
+now puts a generic failure message since any real error is already logged on the server, and should not be exposed to
+the calling client.
+
+
+=========================================================
 2015-08-31 v0.3.0 release
 =========================================================
 

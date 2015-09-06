@@ -70,8 +70,8 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         }
     }
 
-    val controllerAnnotatedVerbAliases = (controller.javaClass.getAnnotation(kotlin.javaClass<VerbAliases>())?.value?.toList() ?: emptyList()) +
-                                          listOf(controller.javaClass.getAnnotation(kotlin.javaClass<VerbAlias>())).filterNotNull()
+    val controllerAnnotatedVerbAliases = (controller.javaClass.getAnnotation(VerbAliases::class.java)?.value?.toList() ?: emptyList()) +
+                                          listOf(controller.javaClass.getAnnotation(VerbAlias::class.java)).filterNotNull()
 
     val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values().toList() +
                           controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
@@ -226,7 +226,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             }
         }
     } else {
-        if (javaClass<RoutingContext>() == receiverType) {
+        if (RoutingContext::class.java == receiverType) {
             EmptyContextFactory
         }
         else {
@@ -261,11 +261,11 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
 }
 
-private fun unwrapInvokeException(rawEx: Throwable): Throwable {
+internal fun unwrapInvokeException(rawEx: Throwable): Throwable {
     return if (rawEx is InvocationTargetException) rawEx.getCause()!! else rawEx
 }
 
-private fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
+internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
     val logger = LoggerFactory.getLogger(controller.javaClass)
     val ex = unwrapInvokeException(rawEx)
     when (ex) {

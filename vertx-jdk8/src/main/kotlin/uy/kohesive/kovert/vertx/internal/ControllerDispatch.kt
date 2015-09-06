@@ -26,7 +26,7 @@ import kotlin.reflect.jvm.javaType
 
 
 @suppress("UNCHECKED_CAST")
-private fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
+internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                                               controller: Any, member: Any, dispatchInstance: Any,
                                               dispatchFunction: KCallable<*>,
                                               contextFactory: ContextFactory<*>,

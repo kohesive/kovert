@@ -14,7 +14,10 @@ import java.time.temporal.Temporal
 private object KovertConfigUpdateJdk8 {
     init {
         // add our JDK 8 simple types to core
-        knownSimpleTypes.addAll(listOf(javaClass<Temporal>(), javaClass<OffsetDateTime>(), javaClass<ZonedDateTime>(), javaClass<LocalDateTime>()))
+        knownSimpleTypes.addAll(listOf(Temporal::class.java,
+                OffsetDateTime::class.java,
+                ZonedDateTime::class.java,
+                LocalDateTime::class.java))
     }
 
     @suppress("NOTHING_TO_INLINE")

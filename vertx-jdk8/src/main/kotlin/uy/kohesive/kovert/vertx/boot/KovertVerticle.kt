@@ -33,7 +33,7 @@ public object KovertVerticleModule : KonfigModule, InjektModule {
 
 public class KovertVerticle private constructor (val cfg: KovertVerticleConfig, val routerInit: Router.() -> Unit, val onListenerReady: (String)->Unit) : AbstractVerticle() {
     companion object {
-        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(this.javaClass)
+        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVerticle::class.java)
 
         /**
          * Deploys a KovertVerticle into a Vertx instance and returns a Promise representing the deployment ID.

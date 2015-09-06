@@ -11,6 +11,7 @@ import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
+import uy.klutter.vertx.externalizeUrl
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.core.reflect.erasedType
 import uy.kohesive.kovert.core.reflect.isAssignableFrom

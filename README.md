@@ -10,11 +10,10 @@ This is an experiment to see how far we can get without looking like JAX-RS.  If
 
 For starting an application with Kovert, you have two options:
 
-* Configure, Startup Vert-x, deploy a Vert-x verticle, add your routes with Vert-x Web, and _then_ ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics of [Vertx](http://vertx.io/docs/vertx-core/java/) 
-
+* Configure, Startup Vert-x, deploy a Vert-x verticle, add your routes with Vert-x Web, and _then_ ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics of [Vertx](http://vertx.io/docs/vertx-core/java/)
 * Alternatively, if you just want to get started without knowing too much, [Kovert provides `KovertVertx` and `KovertVerticle` classes](#vertx-and-kovertverticle-startup) that can bootstrap a base application, but this acts more as an example starting point from which you should build your own.
 
-In addition, Kovert contains [helper classes for starting Vert-x](#vertx--kovenant-promises) that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional Kovert helpers for [JSON](#json), [web](#vertx-web), [logging](#logging), [Injekt](#injekt), and more.  See those topics below...
+In addition, Kovert uses [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) module which contains helper classes for working with Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional helpers for Vert.x JSON objects, the logging facade, web, and integration with [Injekt](#injekt), and more.
 
 #### Maven Dependnecy (Vert.x Version, requires JDK 8)
 
@@ -22,7 +21,7 @@ Include the dependency in your Gradle / Maven projects that are compatible with 
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:0.2.+"
+compile "uy.kohesive.kovert:kovert-vertx:0.3.+"
 ```
 
 **Maven:**
@@ -30,7 +29,7 @@ compile "uy.kohesive.kovert:kovert-vertx:0.2.+"
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
     <artifactId>kovert-vertx</artifactId>
-    <version>[0.2.0,0.3.0)</version>
+    <version>[0.3.0,0.4.0)</version>
 </dependency>
 ```
 
@@ -255,9 +254,9 @@ If you use the `@Verb` annotation on a method, by default the prefix of the meth
 
 #### Vert.x + Kovenant Promises
 
-For using Vert.x with [Kovenant](http://kovenant.komponents.nl), you should launch Vert.x using one of the Kovert helper functions.  If not using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
+For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
 
-See [Vertx.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Vertx.kt) for all Vert.x helper functions.
+See [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) for all Vert.x helper functions include JSON, Vertx-Web, Logging and Injekt modules.
 
 #### Vert.x and KovertVerticle startup
 
@@ -268,49 +267,13 @@ Really, you should configure and launch Vert.x yourself (use helpers above, Klut
 
 The sample application [App.kt](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/App.kt) shows one use of these classes.
 
-#### Vert.x Web
-
-A few methods are availble to help using Vert.x web `Session` and `RoutingContext` including safely creating an externalized URL that takes into account proxies / load balancers.  
-
-See [VertxWeb.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxWeb.kt) for all Vertx-Web helpers.
-
-#### JSON
-
-Kovert also adds builder classes for Vert.x JSON objects:
-
-```kotlin
-val json = jsonBuilder {
-    // call methods on JsonObject()
-}
-```
-
-see [VertxJson.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxJson.kt) for all JSON helpers.
-
-Since Vert.x uses an instance of Jackson internally, you can set it up to work with Kotlin and JDK 8 classes by calling this helper method, and then use the instance `Json.mapper` shared with Vert.x for all data binding.
-
-```kotlin
-setupVertxJsonForKotlin()
-```
-
-See [VertxUtil.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxUtil.kt) for the implementation.
-
-#### Logging
-
-Both Vert-x and Hazelcast (used to cluster Vertx) log through facades.  You can setup those facades to go through SLF4j by setting system properties.  Or you can call this helper method that will configure both of those frameworks to talk to SLF4j by using:
-
-```kotlin
-setupVertxLoggingToSlf4j()
-```
-
-See [VertxUtil.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/VertxUtil.kt) for the implementation.
-
 #### Injekt
 
-Both setting up the JSON singleton, and logging can also be done using Injekt.  If you import the Injekt module `VertxInjektables` you will have an `ObjectMapper` singleton available for Jackson data binding that is shared with Vert.x, and Kovenant will be initialized correctly so that promises and async calls work in conjunction with Vert.x thread dispathcing, and you will have a logger factory configured routing any of your injected logging calls through the Vertx logging Facade.  Alterantively you can import the `VertxWithSlf4jInjektables` module for the same benefits, although your logging factory will be setup to be direct to SLF4j for application code.
+Both for setting up JSON integrated with Kotlin, JDK 8 and Vert.x; and for integrated logging you may import Injekt modules.
 
-When using the `KovertVertx` and `KovertVerticle` classes to launch Vert.x and Kovert, they expect configuration objects to be present, or available for injection.  
+Importing module `VertxInjektables` will provide an `ObjectMapper` singleton available for Jackson data binding that is shared with Vert.x, and Kovenant will be initialized correctly so that promises and async calls work in conjunction with Vert.x thread dispathcing, and you will have a logger factory configured routing any of your injected logging calls through the Vertx logging Facade.  Alterantively you can import the `VertxWithSlf4jInjektables` module for the same benefits, although your logging factory will be setup to be direct to SLF4j for application code.
 
-See [Injektables.kt](vertx-jdk8/src/main/kotlin/uy/kohesive/kovert/vertx/Injektables.kt) for the Injekt modules.  Or look at the sample application [App.kt](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/App.kt) which uses Injekt for configuration, data binding, logging and providing services.
+See the sample application [App.kt](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/App.kt) which uses Injekt for configuration, `KovertVertx` and `KovertVerticle` classes to launch Vert.x and Kovert, data binding, logging and providing services.
 
 ### More Examples
 

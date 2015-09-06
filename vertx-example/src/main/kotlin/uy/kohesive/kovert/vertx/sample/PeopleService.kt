@@ -13,7 +13,7 @@ interface PeopleService {
 data class Person(val id: Int, val name: String, val age: Int, val company: Company? = null)
 
 class MockPeopleService: PeopleService {
-    companion object : InjektModule {
+    companion object Injektables: InjektModule {
         override fun InjektRegistrar.registerInjectables() {
             addSingletonFactory<PeopleService> { MockPeopleService() }
         }

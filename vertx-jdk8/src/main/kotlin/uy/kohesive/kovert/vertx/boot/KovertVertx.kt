@@ -34,7 +34,7 @@ public object KovertVertxModule : KonfigModule, InjektModule {
 
 public class KovertVertx private constructor () {
     companion object {
-        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(this.javaClass)
+        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVertx::class.java)
 
         /**
          * Returns a Promise<Vertx, Exception> representing the started Vertx instance

@@ -216,6 +216,24 @@ public class TestVertxBinding {
         _client.testServer(HttpMethod.PUT, "/api/something/as/json/and/parameters?parm2.name=Fred&parm2.age=30", writeJson = """{ "name": "Tom", "age": 20 }""", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
 
     }
+
+    @Test public fun testMemberVarFunctions() {
+        val controller = MemberVarController()
+        _router.bindController(controller, "/api")
+
+        _client.testServer(HttpMethod.GET, "/api/first/test", assertResponse = "FirstTest")
+        _client.testServer(HttpMethod.GET, "/api/second/test?parm=99", assertResponse = "SecondTest 99")
+        _client.testServer(HttpMethod.POST, "/api/third/test?parm=dog", assertResponse = "ThirdTest dog")
+    }
+}
+
+public class MemberVarController() {
+    public val getFirstTest = fun TwoContext.(): String = "FirstTest"
+    public val getSecondTest = fun TwoContext.(parm: Int): String = "SecondTest ${parm}"
+
+    @Location("third/test")
+    @Verb(HttpVerb.POST)
+    public val getThirdyBaby = fun TwoContext.(parm: String): String = "ThirdTest ${parm}"
 }
 
 public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<Any>, InterceptRequestFailure, ContextFactory<OneContext> {

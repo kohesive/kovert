@@ -20,12 +20,11 @@ import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.*
 import uy.kohesive.kovert.vertx.boot.*
 import java.nio.file.*
-import kotlin.platform.platformStatic
 import kotlin.properties.Delegates
 
 public class App(val configFile: Path) {
     companion object {
-            platformStatic public fun main(args: Array<String>) {
+            @jvmStatic public fun main(args: Array<String>) {
                 if (args.size() != 1) {
                     println("Invalid usage.  ConfigFile parameter is required!")
                     println()

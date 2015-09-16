@@ -2,7 +2,6 @@ dependencies {
     compile relativeProject(":kovert-core")
 
 
-    compile "uy.kohesive.injekt:injekt-config-typesafe-jdk8:$version_injekt"
     compile "uy.klutter:klutter-core-jdk8:$version_klutter"
     compile "uy.klutter:klutter-config-typesafe-jdk8:$version_klutter"
     compile "uy.klutter:klutter-json-jackson-jdk8:$version_klutter"

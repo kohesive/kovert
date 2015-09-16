@@ -7,7 +7,7 @@ import kotlin.reflect.jvm.javaType
 
 
 // things to help until KT-8998 or something similar makes KType nicer to use
-internal fun KType.isAssignableFrom(other: KType): Boolean {
+fun KType.isAssignableFrom(other: KType): Boolean {
     if (this == other || this.javaType == other.javaType) return true
     return (this.javaType.erasedType()).isAssignableFrom(other.javaType.erasedType())
 }
@@ -46,7 +46,7 @@ fun <T: Any> KClass<T>.isAssignableFrom(other: KType): Boolean {
     return this.java.isAssignableFrom(other.javaType.erasedType())
 }
 
-@suppress("UNCHECKED_CAST")
+@Suppress("UNCHECKED_CAST")
 fun Type.erasedType(): Class<Any> {
     return when (this) {
         is Class<*> -> this as Class<Any>

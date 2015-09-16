@@ -1,4 +1,11 @@
 =========================================================
+2015-09-16 v0.4.0 release
+=========================================================
+
+Support for Kotlin M13
+Now allows controller methods as members of type functions `public val findUserData = fun ApiContext.(): UserData { return ... }`
+
+=========================================================
 2015-08-31 v0.3.2 release
 =========================================================
 

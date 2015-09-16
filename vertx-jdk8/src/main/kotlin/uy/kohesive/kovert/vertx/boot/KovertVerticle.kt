@@ -1,24 +1,29 @@
 package uy.kohesive.kovert.vertx.boot
 
 import io.vertx.core.AbstractVerticle
-import io.vertx.core.Verticle
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.net.JksOptions
-import io.vertx.ext.web.*
-import io.vertx.ext.web.handler.*
-import io.vertx.ext.web.sstore.*
+import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.CookieHandler
+import io.vertx.ext.web.handler.LoggerHandler
+import io.vertx.ext.web.handler.SessionHandler
+import io.vertx.ext.web.handler.StaticHandler
+import io.vertx.ext.web.sstore.ClusteredSessionStore
+import io.vertx.ext.web.sstore.LocalSessionStore
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import uy.klutter.core.common.*
-import uy.klutter.core.jdk.*
+import uy.klutter.config.typesafe.KonfigModule
+import uy.klutter.config.typesafe.KonfigRegistrar
+import uy.klutter.core.common.initializedBy
+import uy.klutter.core.jdk.mustNotEndWith
+import uy.klutter.core.jdk.mustStartWith
+import uy.klutter.core.jdk.nullIfBlank
 import uy.klutter.vertx.promiseDeployVerticle
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
-import uy.kohesive.injekt.config.typesafe.KonfigModule
-import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
 import java.util.concurrent.TimeUnit
 
 public object KovertVerticleModule : KonfigModule, InjektModule {
@@ -31,7 +36,7 @@ public object KovertVerticleModule : KonfigModule, InjektModule {
     }
 }
 
-public class KovertVerticle private constructor (val cfg: KovertVerticleConfig, val routerInit: Router.() -> Unit, val onListenerReady: (String)->Unit) : AbstractVerticle() {
+public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
     companion object {
         val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVerticle::class.java)
 
@@ -46,7 +51,7 @@ public class KovertVerticle private constructor (val cfg: KovertVerticleConfig, 
                 deferred.resolve(id)
             }
 
-            vertx.promiseDeployVerticle(KovertVerticle(cfg ,routerInit, completeThePromise)) success { deploymentId ->
+            vertx.promiseDeployVerticle(KovertVerticle(cfg, routerInit, completeThePromise)) success { deploymentId ->
                 LOG.warn("KovertVerticle deployed as ${deploymentId}")
             } fail { failureException ->
                 LOG.error("Vertx deployment failed due to ${failureException.getMessage()}", failureException)

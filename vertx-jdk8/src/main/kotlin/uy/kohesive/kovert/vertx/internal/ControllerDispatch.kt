@@ -13,24 +13,17 @@ import uy.kohesive.kovert.core.isSimpleDataType
 import uy.kohesive.kovert.core.reflect.isAssignableFrom
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptDispatch
-import java.lang.reflect.Method
-import java.math.BigDecimal
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.ZonedDateTime
-import java.time.temporal.Temporal
-import java.util.*
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaType
 
 
-@suppress("UNCHECKED_CAST")
+@Suppress("UNCHECKED_CAST")
 internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
-                                              controller: Any, member: Any, dispatchInstance: Any,
-                                              dispatchFunction: KCallable<*>,
-                                              contextFactory: ContextFactory<*>,
-                                              disallowVoid: Boolean, defaultSuccessStatus: Int) {
+                                               controller: Any, member: Any, dispatchInstance: Any,
+                                               dispatchFunction: KCallable<*>,
+                                               contextFactory: ContextFactory<*>,
+                                               disallowVoid: Boolean, defaultSuccessStatus: Int) {
     val JSON: ObjectMapper = Json.mapper
     route.handler { routeContext ->
         val requestContext = contextFactory.createContext(routeContext)
@@ -49,8 +42,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     // TODO: how does this handle nulls and missing params?
                     val temp: Any = try {
                         JSON.convertValue(request.getParam(param.name), TypeFactory.defaultInstance().constructType(param.type.javaType))
-                    }
-                    catch (ex: Exception) {
+                    } catch (ex: Exception) {
                         throw RuntimeException("Data binding failed due to: ${ex.getMessage()}")
                     }
                     temp
@@ -82,8 +74,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 }
                 useValues.add(paramValue)
             }
-        }
-        catch (rawEx: Throwable) {
+        } catch (rawEx: Throwable) {
             val ex = unwrapInvokeException(rawEx)
             routeContext.fail(ex)
             return@handler
@@ -123,7 +114,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         try {
             // dispatch via intercept, or directly depending on the controller
             val result: Any? = if (controller is InterceptDispatch<*>) {
-                (controller as InterceptDispatch<Any>)._internal(requestContext, member, {  dispatchFunction.call(*useValues.toArray()) })
+                (controller as InterceptDispatch<Any>)._internal(requestContext, member, { dispatchFunction.call(*useValues.toArray()) })
             } else {
                 dispatchFunction.call(*useValues.toArray())
             }

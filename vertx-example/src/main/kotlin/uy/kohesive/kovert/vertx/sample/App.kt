@@ -1,42 +1,42 @@
 package uy.kohesive.kovert.vertx.sample
 
 import com.typesafe.config.Config
-import io.vertx.core.http.HttpMethod
-import io.vertx.ext.auth.User
-import io.vertx.ext.web.*
-import io.vertx.ext.web.handler.BodyHandler
-import nl.komponents.kovenant.Promise
+import io.vertx.ext.web.Router
 import nl.komponents.kovenant.functional.bind
 import org.slf4j.Logger
+import uy.klutter.config.typesafe.KonfigAndInjektMain
+import uy.klutter.config.typesafe.KonfigRegistrar
+import uy.klutter.config.typesafe.ReferenceConfig
 import uy.klutter.config.typesafe.jdk7.FileConfig
-import uy.klutter.config.typesafe.*
-import uy.klutter.core.jdk.*
+import uy.klutter.config.typesafe.loadConfig
 import uy.klutter.vertx.VertxWithSlf4jInjektables
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektRegistrar
-import uy.kohesive.injekt.config.typesafe.*
-import uy.kohesive.kovert
-import uy.kohesive.kovert.core.*
-import uy.kohesive.kovert.vertx.*
-import uy.kohesive.kovert.vertx.boot.*
-import java.nio.file.*
-import kotlin.properties.Delegates
+import uy.kohesive.kovert.core.HttpVerb
+import uy.kohesive.kovert.core.KovertConfig
+import uy.kohesive.kovert.vertx.bindController
+import uy.kohesive.kovert.vertx.boot.KovertVerticle
+import uy.kohesive.kovert.vertx.boot.KovertVerticleModule
+import uy.kohesive.kovert.vertx.boot.KovertVertx
+import uy.kohesive.kovert.vertx.boot.KovertVertxModule
+import java.nio.file.Path
+import java.nio.file.Paths
 
 public class App(val configFile: Path) {
     companion object {
-            @jvmStatic public fun main(args: Array<String>) {
-                if (args.size() != 1) {
-                    println("Invalid usage.  ConfigFile parameter is required!")
-                    println()
-                    println("  usage:  App <configFile>")
-                    println()
-                    println("There is a sample config file in web/sample.conf under the root of this sample project")
-                    println()
-                    System.exit(-1)
-                }
-                App(Paths.get(args[0])).start()
+        @JvmStatic public fun main(args: Array<String>) {
+            if (args.size() != 1) {
+                println("Invalid usage.  ConfigFile parameter is required!")
+                println()
+                println("  usage:  App <configFile>")
+                println()
+                println("There is a sample config file in web/sample.conf under the root of this sample project")
+                println()
+                System.exit(-1)
             }
+            App(Paths.get(args[0])).start()
         }
+    }
 
     // injection setup is done in a nested object to control the order of instantiation AFTER the configFile member is available
     val injektMain = object : KonfigAndInjektMain() {

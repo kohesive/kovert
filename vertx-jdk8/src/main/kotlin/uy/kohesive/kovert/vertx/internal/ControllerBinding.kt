@@ -15,11 +15,14 @@ import uy.klutter.vertx.externalizeUrl
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.core.reflect.erasedType
 import uy.kohesive.kovert.core.reflect.isAssignableFrom
-import uy.kohesive.kovert.vertx.*
-import java.lang.reflect.*
+import uy.kohesive.kovert.vertx.ContextFactory
+import uy.kohesive.kovert.vertx.InterceptRequest
+import uy.kohesive.kovert.vertx.InterceptRequestFailure
+import java.lang.reflect.Constructor
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 import kotlin.reflect.*
 import kotlin.reflect.jvm.javaConstructor
-import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.reflect
 
 
@@ -50,8 +53,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             } catch (ex: Throwable) {
                 handleExceptionResponse(controller, context, ex)
             }
-        }
-        else {
+        } else {
             if (context.failure() != null) {
                 handleExceptionResponse(controller, context, context.failure())
             } else {
@@ -71,11 +73,11 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     }
 
     val controllerAnnotatedVerbAliases = (controller.javaClass.getAnnotation(VerbAliases::class.java)?.value?.toList() ?: emptyList()) +
-                                          listOf(controller.javaClass.getAnnotation(VerbAlias::class.java)).filterNotNull()
+            listOf(controller.javaClass.getAnnotation(VerbAlias::class.java)).filterNotNull()
 
     val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values().toList() +
-                          controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
-                          verbAliases).toMap({it.prefix}, {it})
+            controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
+            verbAliases).toMap({ it.prefix }, { it })
 
     fun memberNameToPath(name: String, knownVerb: VerbWithSuccessStatus?, knownLocation: String?, skipPrefix: Boolean): Pair<VerbWithSuccessStatus?, String> {
         // split camel cases, with underscores also acting as split point then ignored
@@ -104,7 +106,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             match.groups.get(2)!!.value + ":" + match.groups.get(3)!!.value
         }).replace("""((^|[\/])with\/)((?:[\w])+)""".toRegex(), { match ->
             // with/something = something/:something
-            match.groups.get(2)!!.value + match.groups.get(3)!!.value+"/:" + match.groups.get(3)!!.value
+            match.groups.get(2)!!.value + match.groups.get(3)!!.value + "/:" + match.groups.get(3)!!.value
         })
         if (memberVerb == null) {
             logger.error("Member $name is invalid, no HTTP Verb and the prefix ${parts.first()} does not match an HTTP verb alias, ignoring this member")
@@ -114,7 +116,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
 
     // find extension methods that are also members
     controller.javaClass.kotlin.memberExtensionFunctions.forEach { member ->
-        if (member.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE || member.parameters.drop(1).firstOrNull()?.kind  == KParameter.Kind.EXTENSION_RECEIVER) {
+        if (member.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE || member.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
             val verbAnnotation = member.annotations.firstOrNull { it is Verb } as Verb?
             val locationAnnotation = member.annotations.firstOrNull { it is Location } as Location?
 
@@ -153,13 +155,13 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     }
 }
 
-class KFunctionKt9005WorkAround<out R: Any?>(private val _member: KProperty<R>, private val _functionInstance: Function<R>): KCallable<R> {
+class KFunctionKt9005WorkAround<out R : Any?>(private val _member: KProperty<R>, private val _functionInstance: Function<R>) : KCallable<R> {
     private val _reflectedFunction: KFunction<R> = _functionInstance.reflect() ?: throw IllegalStateException("The function instance isn't reflect-able")
-    private val _invokeMethod: Method =  _functionInstance.javaClass.getMethods().filter {  method ->
-                                                 method.getName() == "invoke" &&
-                                                 !method.isBridge &&
-                                                 method.parameterCount == _reflectedFunction.parameters.size()
-                                         }.first() initializedBy { it.isAccessible = true }
+    private val _invokeMethod: Method = _functionInstance.javaClass.getMethods().filter { method ->
+        method.getName() == "invoke" &&
+                !method.isBridge &&
+                method.parameterCount == _reflectedFunction.parameters.size()
+    }.first() initializedBy { it.isAccessible = true }
 
     private val _parameters: List<KParameter> = run {
         _invokeMethod.parameters.withIndex().zip(_reflectedFunction.parameters).map {
@@ -179,12 +181,12 @@ class KFunctionKt9005WorkAround<out R: Any?>(private val _member: KProperty<R>, 
     override val returnType: KType = _invokeMethod.returnType.kotlin.defaultType
     override val annotations: List<Annotation> = _member.annotations
 
-    @suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST")
     override fun call(vararg args: Any?): R {
         return _invokeMethod.invoke(_functionInstance, *args) as R
     }
 
-    @suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST")
     override fun callBy(args: Map<KParameter, Any?>): R {
         throw UnsupportedOperationException()
     }
@@ -204,8 +206,7 @@ internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to Http
         HttpVerb.PATCH to HttpMethod.PATCH)
 
 
-
-@suppress("UNCHECKED_CAST")
+@Suppress("UNCHECKED_CAST")
 private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: KCallable<*>) {
     val receiverType = dispatchFunction.parameters.first { it.kind == KParameter.Kind.EXTENSION_RECEIVER }.type
 
@@ -214,13 +215,12 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         val factoryType = factoryFunction.returnType
         if (receiverType.isAssignableFrom(factoryType)) {
             controller
-        }
-        else {
+        } else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
-            }  else {
+            } else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
                 return
             }
@@ -228,13 +228,12 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     } else {
         if (RoutingContext::class.java == receiverType) {
             EmptyContextFactory
-        }
-        else {
+        } else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
-            }  else {
+            } else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
                 return
             }

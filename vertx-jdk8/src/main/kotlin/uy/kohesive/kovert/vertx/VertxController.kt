@@ -20,7 +20,7 @@ private object KovertConfigUpdateJdk8 {
                 LocalDateTime::class.java))
     }
 
-    @suppress("NOTHING_TO_INLINE")
+    @Suppress("NOTHING_TO_INLINE")
     public inline fun ensure() {
         // TODO: here to be sure we have intiailized anything related before using,
         //       although this function may remain empty it causes initializers on the

@@ -9,11 +9,10 @@ import io.vertx.ext.web.RoutingContext
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.then
 import org.junit.Test
-import uy.klutter.config.typesafe.EnvironmentVariablesConfig
-import uy.klutter.config.typesafe.ReferenceConfig
-import uy.klutter.config.typesafe.SystemPropertiesConfig
+import uy.klutter.config.typesafe.KonfigAndInjektMain
+import uy.klutter.config.typesafe.KonfigModule
+import uy.klutter.config.typesafe.KonfigRegistrar
 import uy.klutter.config.typesafe.jdk7.FileConfig
 import uy.klutter.config.typesafe.loadConfig
 import uy.klutter.vertx.VertxInjektables
@@ -22,20 +21,16 @@ import uy.klutter.vertx.promiseUndeploy
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
-import uy.kohesive.injekt.config.typesafe.KonfigAndInjektMain
-import uy.kohesive.injekt.config.typesafe.KonfigModule
-import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
-import uy.kohesive.kovert
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 import uy.kohesive.kovert.core.HttpVerb
 import uy.kohesive.kovert.core.KovertConfig
-import uy.kohesive.kovert.vertx.*
+import uy.kohesive.kovert.vertx.InterceptDispatch
+import uy.kohesive.kovert.vertx.bindController
 import uy.kohesive.kovert.vertx.boot.*
 import uy.kohesive.kovert.vertx.test.testServer
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.CountDownLatch
 
 
 class TestKovertApp {

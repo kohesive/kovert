@@ -1,9 +1,6 @@
 package uy.kohesive.kovert.vertx
 
-import io.vertx.core.http.HttpMethod
-import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
-import uy.kohesive.kovert.core.HttpVerb
 
 
 /**
@@ -11,7 +8,7 @@ import uy.kohesive.kovert.core.HttpVerb
  * this request with either an exception, or calling vert-x to end the handler.
  */
 public interface InterceptRequest : uy.kohesive.kovert.core.CoreInterceptRequest<RoutingContext> {
-    override public fun interceptRequest(rawContext: RoutingContext, nextHandler: ()->Unit)
+    override public fun interceptRequest(rawContext: RoutingContext, nextHandler: () -> Unit)
 }
 
 /**
@@ -20,10 +17,10 @@ public interface InterceptRequest : uy.kohesive.kovert.core.CoreInterceptRequest
  * throwing exceptions. And exceptions can be caught and handled from the actual dispatch call by wrapping the call
  * to nextHandler() in a try...catch.
  */
-public interface InterceptDispatch<T: Any> : uy.kohesive.kovert.core.CoreInterceptDispatch<T> {
-    override public fun T.interceptDispatch(member: Any, dispatcher: ()->Any?): Any?
+public interface InterceptDispatch<T : Any> : uy.kohesive.kovert.core.CoreInterceptDispatch<T> {
+    override public fun T.interceptDispatch(member: Any, dispatcher: () -> Any?): Any?
 
-    fun _internal(receiver: T, targetMember: Any, dispatcher: ()->Any?): Any? {
+    fun _internal(receiver: T, targetMember: Any, dispatcher: () -> Any?): Any? {
         return receiver.interceptDispatch(targetMember, dispatcher)
     }
 }
@@ -34,7 +31,7 @@ public interface InterceptDispatch<T: Any> : uy.kohesive.kovert.core.CoreInterce
  * to end the route.
  */
 public interface InterceptRequestFailure : uy.kohesive.kovert.core.CoreInterceptRequestFailure<RoutingContext> {
-    override public fun interceptFailure(rawContext: RoutingContext, nextHandler: ()->Unit)
+    override public fun interceptFailure(rawContext: RoutingContext, nextHandler: () -> Unit)
 }
 
 /**

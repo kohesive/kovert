@@ -5,10 +5,11 @@ import com.hazelcast.config.GroupConfig
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
-import io.vertx.ext.web.Router
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import uy.klutter.config.typesafe.KonfigModule
+import uy.klutter.config.typesafe.KonfigRegistrar
 import uy.klutter.core.common.verifiedBy
 import uy.klutter.core.jdk7.notExists
 import uy.klutter.vertx.WrappedThrowableException
@@ -17,10 +18,8 @@ import uy.klutter.vertx.vertxCluster
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
-import uy.kohesive.injekt.config.typesafe.KonfigModule
-import uy.kohesive.injekt.config.typesafe.KonfigRegistrar
-import uy.kohesive.kovert.vertx.*
-import java.nio.file.*
+import java.nio.file.Path
+import java.nio.file.Paths
 
 public object KovertVertxModule : KonfigModule, InjektModule {
     override fun KonfigRegistrar.registerConfigurables() {
@@ -32,9 +31,9 @@ public object KovertVertxModule : KonfigModule, InjektModule {
     }
 }
 
-public class KovertVertx private constructor () {
+public class KovertVertx private constructor() {
     companion object {
-        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(this.javaClass)
+        val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVertx::class.java)
 
         /**
          * Returns a Promise<Vertx, Exception> representing the started Vertx instance

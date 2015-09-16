@@ -14,10 +14,13 @@ import java.time.temporal.Temporal
 private object KovertConfigUpdateJdk8 {
     init {
         // add our JDK 8 simple types to core
-        knownSimpleTypes.addAll(listOf(javaClass<Temporal>(), javaClass<OffsetDateTime>(), javaClass<ZonedDateTime>(), javaClass<LocalDateTime>()))
+        knownSimpleTypes.addAll(listOf(Temporal::class.java,
+                OffsetDateTime::class.java,
+                ZonedDateTime::class.java,
+                LocalDateTime::class.java))
     }
 
-    @suppress("NOTHING_TO_INLINE")
+    @Suppress("NOTHING_TO_INLINE")
     public inline fun ensure() {
         // TODO: here to be sure we have intiailized anything related before using,
         //       although this function may remain empty it causes initializers on the

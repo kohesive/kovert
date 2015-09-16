@@ -1,4 +1,18 @@
 =========================================================
+2015-09-16 v0.4.0 release
+=========================================================
+
+Support for Kotlin M13
+Now allows controller methods as members of type functions `public val findUserData = fun ApiContext.(): UserData { return ... }`
+
+=========================================================
+2015-08-31 v0.3.2 release
+=========================================================
+
+Take new version of Klutter-vertx 0.3.3 since it fixes a shutdown bug.
+Take new versino of Injekt 1.4.0 to stay current with API changes.
+
+=========================================================
 2015-08-31 v0.3.1 release
 =========================================================
 
@@ -17,6 +31,10 @@ breaks imports for those functions which are now under `uy.klutter.vertx3`.  Som
 =========================================================
 2015-08-28 0.1.0 release
 =========================================================
+
+First release, ready for use as a REST backend
+
+2015-08-28 0.1.0 release
 
 First release, ready for use as a REST backend
 

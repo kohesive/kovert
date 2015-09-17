@@ -138,6 +138,14 @@ public class TestVertxBinding {
         assertFalse(controller.aFailure)
     }
 
+    @Test public fun testOneControllerWithNullableParm() {
+        val controller = OneControllerWithAllTraits()
+        _router.bindController(controller, "/one")
+
+        _client.testServer(HttpMethod.GET, "/one/missing/parameter?parm2=happy", assertResponse = "null happy")
+
+    }
+
     @Test public fun testOneControllerWithAllTraitsPromisedResult() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
@@ -329,6 +337,10 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
 
     public fun OneContext.getPromiseError(): Promise<String, Exception> {
         return async { throw HttpErrorForbidden() }
+    }
+
+    public fun OneContext.getMissingParameter(parm1: String?, parm2: String): String {
+        return "${parm1} ${parm2}"
     }
 
 }

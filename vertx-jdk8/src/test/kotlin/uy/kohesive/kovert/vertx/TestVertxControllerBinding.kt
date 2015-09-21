@@ -116,6 +116,15 @@ public class TestVertxBinding {
         assertTrue(controller.aFailure)
     }
 
+    @Test public fun testRoutingContextNaturally() {
+        _router.bindController(OneControllerWithAllTraits(), "/one")
+        _router.bindController(ContextTestController(), "/two")
+
+        _client.testServer(HttpMethod.GET, "/one/no/special/context", 200, assertResponse = "success")
+        _client.testServer(HttpMethod.GET, "/two/no/special/context", 200, assertResponse = "success")
+
+    }
+
     @Test public fun testOneControllerWithAllTraitsRedirects() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
@@ -136,6 +145,15 @@ public class TestVertxBinding {
 
         _client.testServer(HttpMethod.GET, "/one/nothing/and/redirect", 302)
         assertFalse(controller.aFailure)
+
+        _client.testServer(HttpMethod.PUT, "/one/return/nothing/is/ok", 200)
+
+    }
+
+    @Test public fun testOneControllerWithNullableParm() {
+        _router.bindController(OneControllerWithAllTraits(), "/one")
+        _client.testServer(HttpMethod.GET, "/one/missing/parameter?parm2=happy", assertResponse = "null happy")
+
     }
 
     @Test public fun testOneControllerWithAllTraitsPromisedResult() {
@@ -323,6 +341,10 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
         throw HttpRedirect("/one/two")
     }
 
+    public fun OneContext.putReturnNothingIsOk(): Unit {
+
+    }
+
     public fun OneContext.getPromiseResults(): Promise<String, Exception> {
         return async { "I promised, I delivered" }
     }
@@ -331,6 +353,20 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
         return async { throw HttpErrorForbidden() }
     }
 
+    public fun OneContext.getMissingParameter(parm1: String?, parm2: String): String {
+        return "${parm1} ${parm2}"
+    }
+
+    public fun RoutingContext.getNoSpecialContext(): String {
+        return "success"
+    }
+
+}
+
+public class ContextTestController {
+    public fun RoutingContext.getNoSpecialContext(): String {
+        return "success"
+    }
 }
 
 public data class OneContext(private val context: RoutingContext)

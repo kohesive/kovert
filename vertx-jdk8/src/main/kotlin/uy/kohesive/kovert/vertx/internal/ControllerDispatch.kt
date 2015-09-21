@@ -7,6 +7,7 @@ import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
 import io.vertx.ext.web.Route
 import nl.komponents.kovenant.Promise
+import uy.klutter.core.common.whenNotNull
 import uy.klutter.core.jdk.mustNotStartWith
 import uy.kohesive.kovert.core.HttpErrorCode
 import uy.kohesive.kovert.core.isSimpleDataType
@@ -39,11 +40,19 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 } else if (param.kind == KParameter.Kind.EXTENSION_RECEIVER) {
                     requestContext
                 } else if (isSimpleDataType(param.type)) {
-                    // TODO: how does this handle nulls and missing params?
-                    val temp: Any = try {
-                        JSON.convertValue(request.getParam(param.name), TypeFactory.defaultInstance().constructType(param.type.javaType))
-                    } catch (ex: Exception) {
-                        throw RuntimeException("Data binding failed due to: ${ex.getMessage()}")
+                    val parmVal = request.getParam(param.name)
+
+                    if (parmVal == null && !param.type.isMarkedNullable) {
+                        routeContext.fail(HttpErrorCode("Expected not null parameter ${param.name}, but parameter is missing", 400))
+                        return@handler
+                    }
+
+                    val temp: Any? = parmVal.whenNotNull {
+                        try {
+                            JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                        } catch (ex: Exception) {
+                            throw RuntimeException("Data binding failed due to: ${ex.getMessage()}")
+                        }
                     }
                     temp
                 } else {
@@ -107,7 +116,12 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     routeContext.response().setStatusCode(defaultSuccessStatus)
                 }
                 val contentType = routeContext.getAcceptableContentType() ?: /* producesContentType.nullIfBlank() ?: */ "application/json"
-                routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
+                if (result is Void || result is Unit || result is Nothing) {
+                    routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end()
+                }
+                else {
+                    routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
+                }
             }
         }
 

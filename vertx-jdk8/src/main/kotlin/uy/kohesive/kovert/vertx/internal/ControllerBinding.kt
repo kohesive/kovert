@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import kotlin.reflect.*
 import kotlin.reflect.jvm.javaConstructor
+import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.reflect
 
 
@@ -217,7 +218,9 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             controller
         } else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
-            if (contextConstructor != null) {
+            if (RoutingContext::class.defaultType.javaType == receiverType.javaType) {
+                EmptyContextFactory
+            } else if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
             } else {
@@ -226,7 +229,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             }
         }
     } else {
-        if (RoutingContext::class.java == receiverType) {
+        if (RoutingContext::class.defaultType.javaType == receiverType.javaType) {
             EmptyContextFactory
         } else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }

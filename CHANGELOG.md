@@ -1,4 +1,29 @@
 =========================================================
+2015-09-21 v0.4.4 release
+=========================================================
+
+Fix RoutingContext when used as the receiver type for a controller method AND you have a context factory, it was causing the method to be ignored.
+
+
+=========================================================
+2015-09-21 v0.4.3 release
+=========================================================
+
+Handle Unit return from POST/PUT/PATCH/DELETE as ending the response with only sending back headers.
+
+=========================================================
+2015-09-17 v0.4.2 release
+=========================================================
+
+Fix support for missing parameters for nullable constructor parameters.
+
+=========================================================
+2015-09-17 v0.4.1 release
+=========================================================
+
+Update to later Klutter 1.6.0
+
+=========================================================
 2015-09-16 v0.4.0 release
 =========================================================
 

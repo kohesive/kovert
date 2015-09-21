@@ -136,6 +136,9 @@ public class TestVertxBinding {
 
         _client.testServer(HttpMethod.GET, "/one/nothing/and/redirect", 302)
         assertFalse(controller.aFailure)
+
+        _client.testServer(HttpMethod.PUT, "/one/return/nothing/is/ok", 200)
+
     }
 
     @Test public fun testOneControllerWithNullableParm() {
@@ -329,6 +332,10 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
 
     public fun OneContext.getNothingAndRedirect(): Unit {
         throw HttpRedirect("/one/two")
+    }
+
+    public fun OneContext.putReturnNothingIsOk(): Unit {
+
     }
 
     public fun OneContext.getPromiseResults(): Promise<String, Exception> {

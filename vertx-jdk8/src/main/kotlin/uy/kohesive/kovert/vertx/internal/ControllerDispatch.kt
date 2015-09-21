@@ -116,7 +116,12 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     routeContext.response().setStatusCode(defaultSuccessStatus)
                 }
                 val contentType = routeContext.getAcceptableContentType() ?: /* producesContentType.nullIfBlank() ?: */ "application/json"
-                routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
+                if (result is Void || result is Unit || result is Nothing) {
+                    routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end()
+                }
+                else {
+                    routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
+                }
             }
         }
 

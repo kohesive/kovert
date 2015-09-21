@@ -220,13 +220,15 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
+            } else if (RoutingContext::class.defaultType == receiverType) {
+                EmptyContextFactory
             } else {
                 logger.error("Ignoring member ${memberName} since it has a context that isn't constructable with a simple ctor(RoutingContext)")
                 return
             }
         }
     } else {
-        if (RoutingContext::class.java == receiverType) {
+        if (RoutingContext::class.defaultType == receiverType.erasedType()) {
             EmptyContextFactory
         } else {
             val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }

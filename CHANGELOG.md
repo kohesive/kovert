@@ -1,4 +1,11 @@
 =========================================================
+2015-09-21 v0.4.4 release
+=========================================================
+
+Fix RoutingContext when used as the receiver type for a controller method AND you have a context factory, it was causing the method to be ignored.
+
+
+=========================================================
 2015-09-21 v0.4.3 release
 =========================================================
 

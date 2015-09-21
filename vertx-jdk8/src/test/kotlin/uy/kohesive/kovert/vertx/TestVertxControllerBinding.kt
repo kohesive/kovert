@@ -116,6 +116,13 @@ public class TestVertxBinding {
         assertTrue(controller.aFailure)
     }
 
+    @Test public fun testRoutingContextNaturally() {
+        val controller = OneControllerWithAllTraits()
+        _router.bindController(controller, "/one")
+
+        _client.testServer(HttpMethod.GET, "/one/no/special/context", 200, assertResponse = "success")
+    }
+
     @Test public fun testOneControllerWithAllTraitsRedirects() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
@@ -142,10 +149,11 @@ public class TestVertxBinding {
     }
 
     @Test public fun testOneControllerWithNullableParm() {
-        val controller = OneControllerWithAllTraits()
-        _router.bindController(controller, "/one")
+        _router.bindController( OneControllerWithAllTraits(), "/one")
+        _router.bindController(ContextTestController(), "/two")
 
         _client.testServer(HttpMethod.GET, "/one/missing/parameter?parm2=happy", assertResponse = "null happy")
+        _client.testServer(HttpMethod.GET, "/two/missing/parameter?parm2=happy", assertResponse = "null happy")
 
     }
 
@@ -350,6 +358,16 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
         return "${parm1} ${parm2}"
     }
 
+    public fun RoutingContext.getNoSpecialContext(): String {
+        return "success"
+    }
+
+}
+
+public class ContextTestController {
+    public fun RoutingContext.getNoSpecialContext(): String {
+        return "success"
+    }
 }
 
 public data class OneContext(private val context: RoutingContext)

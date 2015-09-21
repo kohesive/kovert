@@ -19,8 +19,7 @@ import uy.klutter.vertx.VertxInjektables
 import uy.klutter.vertx.promiseClose
 import uy.klutter.vertx.promiseUndeploy
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.InjektModule
-import uy.kohesive.injekt.api.InjektRegistrar
+import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 import uy.kohesive.kovert.core.HttpVerb

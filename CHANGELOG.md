@@ -1,9 +1,16 @@
 =========================================================
+2015-09-21 v0.4.5 release
+=========================================================
+
+Update Jackson Kotlin module to 2.6.2-1 for emergency bug fix and Kotlin M13
+Update Klutter to 0.6.2
+Update Injekt to 1.6.1
+
+=========================================================
 2015-09-21 v0.4.4 release
 =========================================================
 
 Fix RoutingContext when used as the receiver type for a controller method AND you have a context factory, it was causing the method to be ignored.
-
 
 =========================================================
 2015-09-21 v0.4.3 release

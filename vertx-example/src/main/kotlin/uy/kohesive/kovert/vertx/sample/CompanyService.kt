@@ -1,8 +1,7 @@
 package uy.kohesive.kovert.vertx.sample
 
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.InjektModule
-import uy.kohesive.injekt.api.InjektRegistrar
+import uy.kohesive.injekt.api.*
 
 interface CompanyService {
     public fun findCompanyByName(name: String): Company?

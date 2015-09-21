@@ -16,8 +16,7 @@ import uy.klutter.vertx.WrappedThrowableException
 import uy.klutter.vertx.vertx
 import uy.klutter.vertx.vertxCluster
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.InjektModule
-import uy.kohesive.injekt.api.InjektRegistrar
+import uy.kohesive.injekt.api.*
 import java.nio.file.Path
 import java.nio.file.Paths
 

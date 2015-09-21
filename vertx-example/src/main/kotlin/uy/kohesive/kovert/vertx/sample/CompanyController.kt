@@ -4,6 +4,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.async
 import uy.klutter.core.common.whenNotNull
 import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 

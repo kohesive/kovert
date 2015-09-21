@@ -3,6 +3,7 @@ package uy.kohesive.kovert.vertx.sample
 import io.vertx.core.http.HttpHeaders
 import io.vertx.ext.web.RoutingContext
 import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorUnauthorized
 import kotlin.properties.Delegates
 

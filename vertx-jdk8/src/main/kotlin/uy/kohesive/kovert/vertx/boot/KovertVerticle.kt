@@ -22,8 +22,7 @@ import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
 import uy.klutter.vertx.promiseDeployVerticle
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.InjektModule
-import uy.kohesive.injekt.api.InjektRegistrar
+import uy.kohesive.injekt.api.*
 import java.util.concurrent.TimeUnit
 
 public object KovertVerticleModule : KonfigModule, InjektModule {

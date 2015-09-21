@@ -1,6 +1,7 @@
 package uy.kohesive.kovert.vertx.sample
 
 import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 

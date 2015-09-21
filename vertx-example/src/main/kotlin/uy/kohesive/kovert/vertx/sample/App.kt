@@ -11,7 +11,7 @@ import uy.klutter.config.typesafe.jdk7.FileConfig
 import uy.klutter.config.typesafe.loadConfig
 import uy.klutter.vertx.VertxWithSlf4jInjektables
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.InjektRegistrar
+import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpVerb
 import uy.kohesive.kovert.core.KovertConfig
 import uy.kohesive.kovert.vertx.bindController

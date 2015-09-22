@@ -3,6 +3,7 @@
 =========================================================
 
 Update Klutter to 0.6.3 with vert.x dispatching changes from Kovenant.
+Added more Java JDK 8 data types allowed as bound parameter types (java.time.*)
 
 =========================================================
 2015-09-21 v0.4.5 release

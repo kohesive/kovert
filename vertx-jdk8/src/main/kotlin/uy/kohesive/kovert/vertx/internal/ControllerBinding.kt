@@ -274,7 +274,7 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
     when (ex) {
         is HttpRedirect -> {
             val redirectTo = context.externalizeUrl(ex.path)
-            logger.debug("HTTP CODE 302 - Redirect to: '$redirectTo'", exReport)
+            logger.debug("HTTP CODE 302 - Redirect to: '$redirectTo'")
             context.response().putHeader("location", ex.path).setStatusCode(ex.code).end()
         }
         is IllegalArgumentException -> {

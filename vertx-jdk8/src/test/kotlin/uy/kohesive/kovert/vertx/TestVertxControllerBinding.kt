@@ -32,6 +32,8 @@ public class TestVertxBinding {
 
     @Before
     public fun beforeTest(context: TestContext) {
+        KovertConfig.reportStackTracesOnExceptions = false
+
         _vertx = vertx().get()  // use Kotlin wrapper to make sure Kovenent is setup to dispatch with vert.x nicely
         _router = Router.router(_vertx)
         _server = _vertx.createHttpServer(HttpServerOptions().setPort(_serverPort).setHost("localhost"))
@@ -44,6 +46,8 @@ public class TestVertxBinding {
 
     @After
     public fun afterTest() {
+        KovertConfig.reportStackTracesOnExceptions = false
+
         _client.close()
         val latch = CountDownLatch(1);
         _server.close {
@@ -87,6 +91,8 @@ public class TestVertxBinding {
     @Test public fun testOneControllerWithAllTraitsFails() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
+
+        KovertConfig.reportStackTracesOnExceptions = true
 
         _client.testServer(HttpMethod.GET, "/one/but/fail500", 500)
         assertTrue(controller.aRequest)

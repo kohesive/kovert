@@ -270,18 +270,19 @@ internal fun unwrapInvokeException(rawEx: Throwable): Throwable {
 internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
     val logger = LoggerFactory.getLogger(controller.javaClass)
     val ex = unwrapInvokeException(rawEx)
+    val exReport = if (KovertConfig.reportStackTracesOnExceptions) ex else null
     when (ex) {
         is HttpRedirect -> {
             val redirectTo = context.externalizeUrl(ex.path)
-            logger.debug("HTTP CODE 302 - Redirect to: '$redirectTo'")
+            logger.debug("HTTP CODE 302 - Redirect to: '$redirectTo'", exReport)
             context.response().putHeader("location", ex.path).setStatusCode(ex.code).end()
         }
         is IllegalArgumentException -> {
-            logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.getMessage()}")
+            logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.getMessage()}", exReport)
             context.response().setStatusCode(400).setStatusMessage("Invalid parameters").end()
         }
         is HttpErrorCode -> {
-            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.getMessage()}", if (ex.code == 500) ex else null)
+            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.getMessage()}", if (ex.code == 500) ex else exReport)
             context.response().setStatusCode(ex.code).setStatusMessage("Error ${ex.code}").end()
         }
         else -> {

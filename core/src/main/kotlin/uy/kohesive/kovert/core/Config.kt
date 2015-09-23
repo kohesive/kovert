@@ -31,6 +31,8 @@ public object KovertConfig {
         defaultVerbAliases.remove(prefix)
         return this
     }
+
+    public @Volatile var reportStackTracesOnExceptions: Boolean = false
 }
 
 public data class PrefixAsVerbWithSuccessStatus(val prefix: String, val verb: HttpVerb, val successStatusCode: Int)

@@ -1,4 +1,10 @@
 =========================================================
+2015-09-23 v0.4.8 release
+=========================================================
+
+Change session handler  in KovertVerticle to only be active on GET, POST, PUT, PATCH, DELETE so it doesn't use or generate new session on OPTION calls
+
+=========================================================
 2015-09-23 v0.4.7 release
 =========================================================
 

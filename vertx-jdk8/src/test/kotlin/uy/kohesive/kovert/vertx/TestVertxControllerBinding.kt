@@ -204,8 +204,10 @@ public class TestVertxBinding {
         _client.testServer(HttpMethod.GET, "verby/people1", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertStatus = 200)
         _client.testServer(HttpMethod.GET, "verby/people2", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertStatus = 200)
 
-        _client.testServer(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
 
+        _client.testServer(HttpMethod.GET, "verby/person1", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
+        _client.testServer(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
+        _client.testServer(HttpMethod.POST, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
     }
 
     @Test public fun testOtherAnnotations() {
@@ -424,6 +426,12 @@ public class JsonControllerManyAliases {
     }
     public fun OneContext.addPerson1(person: Person): Person {
         return person
+    }
+    public fun OneContext.postPerson1(person: Person): Person {
+        return person
+    }
+    public fun OneContext.getPerson1(): Person {
+        return Person("Fred", 30)
     }
 }
 

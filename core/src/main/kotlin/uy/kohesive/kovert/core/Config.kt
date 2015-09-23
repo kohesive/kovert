@@ -33,6 +33,7 @@ public object KovertConfig {
     }
 
     public @Volatile var reportStackTracesOnExceptions: Boolean = false
+    public @Volatile var autoAddBodyHandlersOnPutPostPatch: Boolean = true
 }
 
 public data class PrefixAsVerbWithSuccessStatus(val prefix: String, val verb: HttpVerb, val successStatusCode: Int)

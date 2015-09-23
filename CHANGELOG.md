@@ -1,4 +1,11 @@
 =========================================================
+2015-09-23 v0.4.9 release
+=========================================================
+
+Add `KovertConfig.autoAddBodyHandlersOnPutPostPatch` setting (default true) to control the body handler being added by Kovert to routes that require it
+Update to Klutter 0.6.4
+
+=========================================================
 2015-09-23 v0.4.8 release
 =========================================================
 

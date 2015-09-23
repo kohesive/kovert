@@ -249,9 +249,9 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     val finalRoutePath = fullPath.nullIfBlank() ?: "/"
     val vertxVerb = verbToVertx.get(verbAndStatus.verb)!!
 
-    if (verbAndStatus.verb == HttpVerb.POST || verbAndStatus.verb == HttpVerb.PUT || verbAndStatus.verb == HttpVerb.PATCH) {
+    if (KovertConfig.autoAddBodyHandlersOnPutPostPatch && (verbAndStatus.verb == HttpVerb.POST || verbAndStatus.verb == HttpVerb.PUT || verbAndStatus.verb == HttpVerb.PATCH)) {
         // TODO: configure body max size elsewhere
-        router.route(finalRoutePath).method(verbToVertx.get(verbAndStatus.verb)!!).handler(BodyHandler.create().setBodyLimit(8 * 1024))
+        router.route(finalRoutePath).method(vertxVerb).handler(BodyHandler.create().setBodyLimit(8 * 1024))
     }
 
     val route = router.route(finalRoutePath).method(vertxVerb)

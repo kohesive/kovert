@@ -3,6 +3,7 @@
 =========================================================
 
 Improve local-only cluster settings for KovertVertx and hazelcast (use tcp instead of multicast, set to loopback)
+Local only clustering is false by default
 
 =========================================================
 2015-09-24 v0.4.11 release

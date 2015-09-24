@@ -99,7 +99,7 @@ public data class VertxConfig(val clustered: Boolean = true,
                               val clusterPass: String,
                               val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
                               val fileCaching: FileCacheConfig,
-                              val forceLocalClusterOnly: Boolean = true)
+                              val forceLocalClusterOnly: Boolean = false)
 
 public data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
 

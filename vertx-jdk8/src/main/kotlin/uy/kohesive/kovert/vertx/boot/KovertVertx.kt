@@ -18,6 +18,7 @@ import uy.klutter.vertx.vertx
 import uy.klutter.vertx.vertxCluster
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.*
+import java.net.InetAddress
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -62,7 +63,11 @@ public class KovertVertx private constructor() {
 
                 val hazelcastConfig = XmlConfigBuilder().build().setGroupConfig(GroupConfig(vertxCfg.clusterName, vertxCfg.clusterPass))
                 if (vertxCfg.forceLocalClusterOnly) {
-                    hazelcastConfig.networkConfig.interfaces.setInterfaces(listOf("localhost"))
+                    val loopback = InetAddress.getLoopbackAddress().hostAddress
+                    hazelcastConfig.networkConfig.interfaces.setInterfaces(setOf(loopback))
+                    hazelcastConfig.networkConfig.join.multicastConfig.setEnabled(false)
+                    hazelcastConfig.networkConfig.join.tcpIpConfig.setEnabled(true)
+                    hazelcastConfig.networkConfig.join.tcpIpConfig.setMembers(listOf(loopback))
                 }
                 LOG.trace(hazelcastConfig.toString())
                 val vertxOptions = VertxOptions().setWorkerPoolSize(vertxCfg.workerThreadPoolSize.coerceIn((numCores * 2)..(numCores * 128)))
@@ -94,7 +99,7 @@ public data class VertxConfig(val clustered: Boolean = true,
                               val clusterPass: String,
                               val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
                               val fileCaching: FileCacheConfig,
-                              val forceLocalClusterOnly: Boolean = true)
+                              val forceLocalClusterOnly: Boolean = false)
 
 public data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
 

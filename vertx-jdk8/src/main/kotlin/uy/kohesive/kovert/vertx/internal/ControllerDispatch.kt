@@ -68,7 +68,8 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                         JSON.convertValue(tempMap, TypeFactory.defaultInstance().constructType(param.type.javaType))
                     } else if (usedBodyJsonAlready) {
                         routeContext.fail(HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
-                    } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json") {
+                    } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json" &&
+                            !routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE).startsWith("application/json;")) {
                         routeContext.fail(HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
                     } else {
                         val temp: Any = try {

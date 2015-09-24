@@ -1,4 +1,12 @@
 =========================================================
+2015-09-24 v0.4.10 release
+=========================================================
+
+Allow `application/json;...` for content type to auto bind post/patch/put data such as `application/json; charset=utf-8`
+Move logback.xml out of resources into logback-test.xml in test resources only
+Update to Klutter 0.6.5
+
+=========================================================
 2015-09-23 v0.4.9 release
 =========================================================
 

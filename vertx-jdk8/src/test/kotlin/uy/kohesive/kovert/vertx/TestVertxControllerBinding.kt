@@ -208,6 +208,15 @@ public class TestVertxBinding {
         _client.testServer(HttpMethod.GET, "verby/person1", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
         _client.testServer(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
         _client.testServer(HttpMethod.POST, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
+
+    }
+
+    @Test public fun testAltContentTypeWithEncoding() {
+        val controller = JsonControllerManyAliases()
+        _router.bindController(controller, "/verby")
+
+        _client.testServerAltContentType(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
+        _client.testServerAltContentType(HttpMethod.POST, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
     }
 
     @Test public fun testOtherAnnotations() {

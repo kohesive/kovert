@@ -1,4 +1,12 @@
 =========================================================
+2015-09-24 v0.4.11 release
+=========================================================
+
+Add configuration option for KovertVerticle that can force networking to localhost for clustering (mac osx might still violate this and broadcast all interfaces)
+Add loading of default hazelcast cluster xml from vertx when using KovertVerticle and clustering mode
+Sample App now has more realistic logging configuration, separate app.log, error.log and access.log
+
+=========================================================
 2015-09-24 v0.4.10 release
 =========================================================
 

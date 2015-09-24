@@ -1,4 +1,46 @@
 =========================================================
+2015-09-24 v0.4.11 release
+=========================================================
+
+Add configuration option for KovertVerticle that can force networking to localhost for clustering (mac osx might still violate this and broadcast all interfaces)
+Add loading of default hazelcast cluster xml from vertx when using KovertVerticle and clustering mode
+Sample App now has more realistic logging configuration, separate app.log, error.log and access.log
+
+=========================================================
+2015-09-24 v0.4.10 release
+=========================================================
+
+Allow `application/json;...` for content type to auto bind post/patch/put data such as `application/json; charset=utf-8`
+Move logback.xml out of resources into logback-test.xml in test resources only
+Update to Klutter 0.6.5
+
+=========================================================
+2015-09-23 v0.4.9 release
+=========================================================
+
+Add `KovertConfig.autoAddBodyHandlersOnPutPostPatch` setting (default true) to control the body handler being added by Kovert to routes that require it
+Update to Klutter 0.6.4
+
+=========================================================
+2015-09-23 v0.4.8 release
+=========================================================
+
+Change session handler  in KovertVerticle to only be active on GET, POST, PUT, PATCH, DELETE so it doesn't use or generate new session on OPTION calls
+
+=========================================================
+2015-09-23 v0.4.7 release
+=========================================================
+
+Allow reporting of stack traces on route failures via `KovertConfig.reportStackTracesOnExceptions = true`
+
+=========================================================
+2015-09-21 v0.4.6 release
+=========================================================
+
+Update Klutter to 0.6.3 with vert.x dispatching changes from Kovenant.
+Added more Java JDK 8 data types allowed as bound parameter types (java.time.*)
+
+=========================================================
 2015-09-21 v0.4.5 release
 =========================================================
 

@@ -32,6 +32,8 @@ public class TestVertxBinding {
 
     @Before
     public fun beforeTest(context: TestContext) {
+        KovertConfig.reportStackTracesOnExceptions = false
+
         _vertx = vertx().get()  // use Kotlin wrapper to make sure Kovenent is setup to dispatch with vert.x nicely
         _router = Router.router(_vertx)
         _server = _vertx.createHttpServer(HttpServerOptions().setPort(_serverPort).setHost("localhost"))
@@ -44,6 +46,8 @@ public class TestVertxBinding {
 
     @After
     public fun afterTest() {
+        KovertConfig.reportStackTracesOnExceptions = false
+
         _client.close()
         val latch = CountDownLatch(1);
         _server.close {
@@ -87,6 +91,8 @@ public class TestVertxBinding {
     @Test public fun testOneControllerWithAllTraitsFails() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
+
+        KovertConfig.reportStackTracesOnExceptions = true
 
         _client.testServer(HttpMethod.GET, "/one/but/fail500", 500)
         assertTrue(controller.aRequest)
@@ -198,8 +204,19 @@ public class TestVertxBinding {
         _client.testServer(HttpMethod.GET, "verby/people1", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertStatus = 200)
         _client.testServer(HttpMethod.GET, "verby/people2", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertStatus = 200)
 
-        _client.testServer(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
 
+        _client.testServer(HttpMethod.GET, "verby/person1", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
+        _client.testServer(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
+        _client.testServer(HttpMethod.POST, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
+
+    }
+
+    @Test public fun testAltContentTypeWithEncoding() {
+        val controller = JsonControllerManyAliases()
+        _router.bindController(controller, "/verby")
+
+        _client.testServerAltContentType(HttpMethod.PUT, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 201, assertResponse = """{"name":"Fred","age":30}""")
+        _client.testServerAltContentType(HttpMethod.POST, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
     }
 
     @Test public fun testOtherAnnotations() {
@@ -418,6 +435,12 @@ public class JsonControllerManyAliases {
     }
     public fun OneContext.addPerson1(person: Person): Person {
         return person
+    }
+    public fun OneContext.postPerson1(person: Person): Person {
+        return person
+    }
+    public fun OneContext.getPerson1(): Person {
+        return Person("Fred", 30)
     }
 }
 

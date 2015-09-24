@@ -73,3 +73,16 @@ public fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: I
     assertEquals(assertStatus, result.statusCode, "Eror with ${verb} at ${path}")
     assertEquals(assertResponse, result.body, "Eror with ${verb} at ${path}")
 }
+
+public fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, writeJson: String? = null) {
+    val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
+        if (writeJson != null) {
+            putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+            setChunked(true)
+            write(writeJson)
+        }
+    }).get()
+
+    assertEquals(assertStatus, result.statusCode, "Eror with ${verb} at ${path}")
+    assertEquals(assertResponse, result.body, "Eror with ${verb} at ${path}")
+}

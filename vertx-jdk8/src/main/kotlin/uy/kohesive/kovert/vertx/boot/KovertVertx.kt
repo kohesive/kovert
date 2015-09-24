@@ -2,6 +2,7 @@ package uy.kohesive.kovert.vertx.boot
 
 import com.hazelcast.config
 import com.hazelcast.config.GroupConfig
+import com.hazelcast.config.XmlConfigBuilder
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
@@ -59,9 +60,14 @@ public class KovertVertx private constructor() {
 
                 val numCores = Runtime.getRuntime().availableProcessors()
 
+                val hazelcastConfig = XmlConfigBuilder().build().setGroupConfig(GroupConfig(vertxCfg.clusterName, vertxCfg.clusterPass))
+                if (vertxCfg.forceLocalClusterOnly) {
+                    hazelcastConfig.networkConfig.interfaces.setInterfaces(listOf("localhost"))
+                }
+                LOG.trace(hazelcastConfig.toString())
                 val vertxOptions = VertxOptions().setWorkerPoolSize(vertxCfg.workerThreadPoolSize.coerceIn((numCores * 2)..(numCores * 128)))
                         .setClustered(vertxCfg.clustered)
-                        .setClusterManager(HazelcastClusterManager(config.Config().setGroupConfig(GroupConfig(vertxCfg.clusterName, vertxCfg.clusterPass))))
+                        .setClusterManager(HazelcastClusterManager(hazelcastConfig))
 
                 with (vertxOptions) { vertxOptionsInit() }
 
@@ -87,7 +93,8 @@ public data class VertxConfig(val clustered: Boolean = true,
                               val clusterName: String,
                               val clusterPass: String,
                               val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
-                              val fileCaching: FileCacheConfig)
+                              val fileCaching: FileCacheConfig,
+                              val forceLocalClusterOnly: Boolean = true)
 
 public data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
 

@@ -249,9 +249,9 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     val finalRoutePath = fullPath.nullIfBlank() ?: "/"
     val vertxVerb = verbToVertx.get(verbAndStatus.verb)!!
 
-    if (verbAndStatus.verb == HttpVerb.POST || verbAndStatus.verb == HttpVerb.PUT || verbAndStatus.verb == HttpVerb.PATCH) {
+    if (KovertConfig.autoAddBodyHandlersOnPutPostPatch && (verbAndStatus.verb == HttpVerb.POST || verbAndStatus.verb == HttpVerb.PUT || verbAndStatus.verb == HttpVerb.PATCH)) {
         // TODO: configure body max size elsewhere
-        router.route(finalRoutePath).method(verbToVertx.get(verbAndStatus.verb)!!).handler(BodyHandler.create().setBodyLimit(8 * 1024))
+        router.route(finalRoutePath).method(vertxVerb).handler(BodyHandler.create().setBodyLimit(8 * 1024))
     }
 
     val route = router.route(finalRoutePath).method(vertxVerb)
@@ -270,6 +270,7 @@ internal fun unwrapInvokeException(rawEx: Throwable): Throwable {
 internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
     val logger = LoggerFactory.getLogger(controller.javaClass)
     val ex = unwrapInvokeException(rawEx)
+    val exReport = if (KovertConfig.reportStackTracesOnExceptions) ex else null
     when (ex) {
         is HttpRedirect -> {
             val redirectTo = context.externalizeUrl(ex.path)
@@ -277,11 +278,11 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
             context.response().putHeader("location", ex.path).setStatusCode(ex.code).end()
         }
         is IllegalArgumentException -> {
-            logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.getMessage()}")
+            logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.getMessage()}", exReport)
             context.response().setStatusCode(400).setStatusMessage("Invalid parameters").end()
         }
         is HttpErrorCode -> {
-            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.getMessage()}", if (ex.code == 500) ex else null)
+            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.getMessage()}", if (ex.code == 500) ex else exReport)
             context.response().setStatusCode(ex.code).setStatusMessage("Error ${ex.code}").end()
         }
         else -> {

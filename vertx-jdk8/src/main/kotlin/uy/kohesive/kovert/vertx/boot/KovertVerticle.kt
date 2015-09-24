@@ -2,6 +2,7 @@ package uy.kohesive.kovert.vertx.boot
 
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Vertx
+import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.net.JksOptions
@@ -73,7 +74,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
             val appRouter = Router.router(vertx) initializedBy { router ->
                 router.route().handler(LoggerHandler.create())
                 router.route().handler(cookieHandlerFactory())
-                router.route().handler(sessionHandler)
+                router.route().method(HttpMethod.GET).method(HttpMethod.PUT).method(HttpMethod.POST).method(HttpMethod.DELETE).method(HttpMethod.PATCH).handler(sessionHandler)
 
                 // give the user a chance to bind more routes, for example their controllers
                 router.routerInit()

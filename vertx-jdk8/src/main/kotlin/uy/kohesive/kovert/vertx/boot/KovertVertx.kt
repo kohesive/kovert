@@ -1,6 +1,5 @@
 package uy.kohesive.kovert.vertx.boot
 
-import com.hazelcast.config
 import com.hazelcast.config.GroupConfig
 import com.hazelcast.config.XmlConfigBuilder
 import io.vertx.core.Vertx

@@ -6,25 +6,23 @@ import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
-import uy.klutter.core.common.initializedBy
 import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
+import uy.klutter.reflect.full.KCallableFuncRefOrLambda
+import uy.klutter.reflect.full.erasedType
+import uy.klutter.reflect.full.isAssignableFrom
+import uy.klutter.reflect.unwrapInvokeException
 import uy.klutter.vertx.externalizeUrl
 import uy.kohesive.kovert.core.*
-import uy.kohesive.kovert.core.reflect.erasedType
-import uy.kohesive.kovert.core.reflect.isAssignableFrom
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptRequest
 import uy.kohesive.kovert.vertx.InterceptRequestFailure
 import java.lang.reflect.Constructor
-import java.lang.reflect.InvocationTargetException
-import java.lang.reflect.Method
 import kotlin.reflect.*
 import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaType
-import kotlin.reflect.jvm.reflect
 
 
 /**
@@ -115,81 +113,38 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         return kotlin.Pair(memberVerb, memberPath)
     }
 
-    // find extension methods that are also members
-    controller.javaClass.kotlin.memberExtensionFunctions.forEach { member ->
-        if (member.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE || member.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
-            val verbAnnotation = member.annotations.firstOrNull { it is Verb } as Verb?
-            val locationAnnotation = member.annotations.firstOrNull { it is Location } as Location?
-
-            // looking for extension functions
-            val dispatchInstance = controller
-            val (verbAndStatus, subPath) = memberNameToPath(member.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+    fun acceptCallable(member: Any, memberName: String, dispatchInstance: Any, callable: KCallable<*>) {
+        if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE && callable.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
+            val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
+            val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
+            val (verbAndStatus, subPath) = memberNameToPath(memberName, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
             if (verbAndStatus != null) {
-                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, member.name, dispatchInstance, member)
+                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable)
             }
         }
+    }
+
+    // find extension methods that are also members
+    controller.javaClass.kotlin.memberExtensionFunctions.forEach { member ->
+        acceptCallable(member, member.name, controller, member)
     }
 
     // find properties that are function references
-    controller.javaClass.kotlin.memberProperties.forEach { prop ->
-        if (Function::class.isAssignableFrom(prop.returnType)) {
-            val dispatchInstance = prop.get(controller)
+    controller.javaClass.kotlin.memberProperties.forEach { member ->
+        if (Function::class.isAssignableFrom(member.returnType)) {
+            val dispatchInstance = member.get(controller)
             if (dispatchInstance != null && dispatchInstance is Function<*>) {
                 try {
-                    val callable = KFunctionKt9005WorkAround(prop, dispatchInstance)
-                    if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
-                        val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
-                        val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
-                        val (verbAndStatus, subPath) = memberNameToPath(prop.name, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
-                        if (verbAndStatus != null) {
-                            setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, prop, prop.name, dispatchInstance, callable)
-                        }
-                    }
+                    val callable = KCallableFuncRefOrLambda.fromInstance(dispatchInstance, member.name, member.annotations)
+                    acceptCallable(member, member.name, dispatchInstance, callable)
                 } catch (ex: IllegalStateException) {
-                    logger.debug("Ignoring property ${prop.name}, is of type Function but doesn't appear to have KFunction meta-data (Internal Kotlin thing)")
+                    logger.debug("Ignoring property ${member.name}, is of type Function but doesn't appear to have KFunction meta-data (Internal Kotlin thing)")
                 }
             } else {
-                logger.debug("Ignoring property ${prop.name}, is of type Function but has null instance")
+                logger.debug("Ignoring property ${member.name}, is of type Function but has null instance")
             }
         }
 
-    }
-}
-
-class KFunctionKt9005WorkAround<out R : Any?>(private val _member: KProperty<R>, private val _functionInstance: Function<R>) : KCallable<R> {
-    private val _reflectedFunction: KFunction<R> = _functionInstance.reflect() ?: throw IllegalStateException("The function instance isn't reflect-able")
-    private val _invokeMethod: Method = _functionInstance.javaClass.getMethods().filter { method ->
-        method.getName() == "invoke" &&
-                !method.isBridge &&
-                method.parameterCount == _reflectedFunction.parameters.size()
-    }.first() initializedBy { it.isAccessible = true }
-
-    private val _parameters: List<KParameter> = run {
-        _invokeMethod.parameters.withIndex().zip(_reflectedFunction.parameters).map {
-            object : KParameter {
-                override val index: Int = it.first.index
-                override val isOptional: Boolean = it.second.isOptional
-                override val kind: KParameter.Kind = it.second.kind
-                override val name: String? = it.second.name
-                override val type: KType = it.first.value.getType().kotlin.defaultType
-                override val annotations: List<Annotation> = _member.annotations
-            }
-        }
-    }
-
-    override val name: String = _member.name
-    override val parameters: List<KParameter> = _parameters
-    override val returnType: KType = _invokeMethod.returnType.kotlin.defaultType
-    override val annotations: List<Annotation> = _member.annotations
-
-    @Suppress("UNCHECKED_CAST")
-    override fun call(vararg args: Any?): R {
-        return _invokeMethod.invoke(_functionInstance, *args) as R
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun callBy(args: Map<KParameter, Any?>): R {
-        throw UnsupportedOperationException()
     }
 }
 
@@ -261,10 +216,6 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName}")
 
     setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
-}
-
-internal fun unwrapInvokeException(rawEx: Throwable): Throwable {
-    return if (rawEx is InvocationTargetException) rawEx.getCause()!! else rawEx
 }
 
 internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {

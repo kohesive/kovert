@@ -3,5 +3,7 @@ dependencies {
     compile "uy.klutter:klutter-core-jdk7:$version_klutter"
     compile "uy.klutter:klutter-config-typesafe-jdk7:$version_klutter"
     compile "uy.klutter:klutter-json-jackson-jdk6:$version_klutter"
+    compile "uy.klutter:klutter-reflect-core-jdk6:$version_klutter"
+    compile "uy.klutter:klutter-reflect-full-jdk6:$version_klutter"
     compile "nl.komponents.kovenant:kovenant:$version_kovenant"
 }

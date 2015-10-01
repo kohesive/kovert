@@ -9,11 +9,14 @@ import io.vertx.ext.web.Route
 import nl.komponents.kovenant.Promise
 import uy.klutter.core.common.whenNotNull
 import uy.klutter.core.jdk.mustNotStartWith
+import uy.klutter.reflect.conversion.TypeConversionConfig
+import uy.klutter.reflect.full.isAssignableFrom
+import uy.klutter.reflect.unwrapInvokeException
 import uy.kohesive.kovert.core.HttpErrorCode
 import uy.kohesive.kovert.core.isSimpleDataType
-import uy.kohesive.kovert.core.reflect.isAssignableFrom
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptDispatch
+import java.lang.reflect.Type
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaType
@@ -49,6 +52,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
 
                     val temp: Any? = parmVal.whenNotNull {
                         try {
+                          //  TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass as Type, param.type.javaType, parmVal)
                             JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
                         } catch (ex: Exception) {
                             throw RuntimeException("Data binding failed due to: ${ex.getMessage()}")

@@ -5,6 +5,8 @@ dependencies {
     compile "uy.klutter:klutter-core-jdk8:$version_klutter"
     compile "uy.klutter:klutter-config-typesafe-jdk8:$version_klutter"
     compile "uy.klutter:klutter-json-jackson-jdk8:$version_klutter"
+    compile "uy.klutter:klutter-reflect-core-jdk8:$version_klutter"
+    compile "uy.klutter:klutter-reflect-full-jdk6:$version_klutter"
     compile "uy.klutter:klutter-vertx3-jdk8:$version_klutter"
 
     compile "io.vertx:vertx-core:$version_vertx"

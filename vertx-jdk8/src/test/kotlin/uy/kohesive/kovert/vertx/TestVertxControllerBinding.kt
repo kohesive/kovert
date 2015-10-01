@@ -1,7 +1,9 @@
 package uy.kohesive.kovert.vertx.test
 
+import com.fasterxml.jackson.databind.SerializationFeature
 import io.vertx.core.Vertx
 import io.vertx.core.http.*
+import io.vertx.core.json.Json
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.VertxUnitRunner
 import io.vertx.ext.web.Router
@@ -10,11 +12,14 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.async
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
+import uy.klutter.core.jdk8.utcNow
 import uy.klutter.vertx.vertx
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.*
+import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import kotlin.properties.Delegates
 import kotlin.test.assertFalse
@@ -33,6 +38,10 @@ public class TestVertxBinding {
     @Before
     public fun beforeTest(context: TestContext) {
         KovertConfig.reportStackTracesOnExceptions = false
+        Json.mapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+        Json.mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
+        Json.prettyMapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+        Json.prettyMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
 
         _vertx = vertx().get()  // use Kotlin wrapper to make sure Kovenent is setup to dispatch with vert.x nicely
         _router = Router.router(_vertx)
@@ -260,6 +269,16 @@ public class TestVertxBinding {
         _client.testServer(HttpMethod.GET, "/api/second/test?parm=99", assertResponse = "SecondTest 99")
         _client.testServer(HttpMethod.POST, "/api/third/test?parm=dog", assertResponse = "ThirdTest dog")
     }
+
+    @Ignore("Need to figure out why the jackson bindings for Instant sometimes go bonkers")
+    @Test public fun testSpecialTypes() {
+        val controller = ControllerWithSpecialTypes()
+        _router.bindController(controller, "/api")
+
+        val i = utcNow()
+        _client.testServer(HttpMethod.GET, "/api/thing/${i.toEpochMilli()}", assertResponse = "{${i.toEpochMilli()}}")
+
+    }
 }
 
 public class MemberVarController() {
@@ -421,6 +440,12 @@ public class JsonController {
 
     public fun OneContext.findPeople2_Named_ByName_Age_ByAge(name: String, age: Int): List<Person> {
         return findPeopleNamedByNameWithAge(name, age)
+    }
+}
+
+public class ControllerWithSpecialTypes {
+    public fun OneContext.getThingByDate(date: Instant): Instant {
+        return date
     }
 }
 

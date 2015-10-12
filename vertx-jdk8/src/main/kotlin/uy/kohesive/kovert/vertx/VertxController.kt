@@ -1,21 +1,17 @@
 package uy.kohesive.kovert.vertx
 
-import io.vertx.core.http.HttpMethod
 import io.vertx.ext.web.Router
-import uy.kohesive.kovert.core.HttpVerb
 import uy.kohesive.kovert.core.PrefixAsVerbWithSuccessStatus
 import uy.kohesive.kovert.core.knownSimpleTypes
 import uy.kohesive.kovert.vertx.internal.bindControllerController
-import java.time.Instant
 import java.time.*
-import java.time.OffsetDateTime
-import java.time.ZonedDateTime
 import java.time.temporal.Temporal
+import kotlin.reflect.KClass
 
 private object KovertConfigUpdateJdk8 {
     init {
         // add our JDK 8 simple types to core
-        knownSimpleTypes.addAll(listOf(Temporal::class,
+        knownSimpleTypes.addAll(listOf<KClass<out Any>>(Temporal::class,
                 OffsetDateTime::class,
                 ZonedDateTime::class,
                 LocalDate::class,

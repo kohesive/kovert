@@ -8,8 +8,7 @@ import io.vertx.core.logging.Logger
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import uy.klutter.config.typesafe.KonfigModule
-import uy.klutter.config.typesafe.KonfigRegistrar
+import uy.klutter.config.typesafe.*
 import uy.klutter.core.common.verifiedBy
 import uy.klutter.core.jdk7.notExists
 import uy.klutter.vertx.WrappedThrowableException
@@ -79,7 +78,7 @@ public class KovertVertx private constructor() {
                 startupPromise success { vertx ->
                     deferred.resolve(vertx)
                 } fail { failureException ->
-                    LOG.error("Vertx deployment failed due to ${failureException.getMessage()}", failureException)
+                    LOG.error("Vertx deployment failed due to ${failureException.message}", failureException)
                     deferred.reject(failureException)
                 }
             } catch (ex: Exception) {

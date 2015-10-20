@@ -11,7 +11,7 @@ import kotlin.reflect.jvm.javaType
 
 
 public fun isSimpleDataType(type: Class<*>) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.getName())
-public fun <T: Any> isSimpleDataType(type: KClass<T>) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.qualifiedName)
+public fun <T: Any> isSimpleDataType(type: KClass<T>) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.qualifiedName ?: "")
 public fun isSimpleDataType(type: KType) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.javaType.erasedType().name)
 
 @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")

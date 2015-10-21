@@ -12,7 +12,7 @@ import nl.komponents.kovenant.functional.bind
 import org.junit.Test
 import uy.klutter.config.typesafe.KonfigAndInjektMain
 import uy.klutter.config.typesafe.KonfigModule
-import uy.klutter.config.typesafe.KonfigRegistrar
+import uy.klutter.config.typesafe.*
 import uy.klutter.config.typesafe.jdk7.FileConfig
 import uy.klutter.config.typesafe.loadConfig
 import uy.klutter.vertx.VertxInjektables
@@ -169,7 +169,7 @@ class PeopleService {
     ).map { it.id to it }.toTypedArray())
 
     public fun findPersonById(id: Int): Person? = people.get(id)
-    public fun findPersonsByName(name: String): List<Person> = people.values().filter { it.name.equals(name, ignoreCase = true) }
+    public fun findPersonsByName(name: String): List<Person> = people.values.filter { it.name.equals(name, ignoreCase = true) }
     public fun writePerson(newPerson: Person): Unit {
         people.put(newPerson.id, newPerson)
     }

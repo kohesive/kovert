@@ -18,7 +18,7 @@ class MockCompanyService(val peopleService: PeopleService = Injekt.get()): Compa
     }
 
     override public fun findCompanyByName(name: String): Company? = mockData_companyByName.get(name.toLowerCase())
-    override public fun findCompaniesByCountry(country: String): List<Company> = mockData_companyByName.values().filter { it.country.equals(country, ignoreCase = true) }
+    override public fun findCompaniesByCountry(country: String): List<Company> = mockData_companyByName.values.filter { it.country.equals(country, ignoreCase = true) }
     override public fun upsertCompany(newCompany: Company): Unit {
         mockData_companyByName.put(newCompany.name.toLowerCase(), newCompany)
     }

@@ -38,55 +38,57 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
 
         try {
             for (param in dispatchFunction.parameters) {
-                val paramValue: Any? = if (param.kind == KParameter.Kind.INSTANCE) {
-                    dispatchInstance
+                if (param.kind == KParameter.Kind.INSTANCE) {
+                    useValues.add(dispatchInstance)
                 } else if (param.kind == KParameter.Kind.EXTENSION_RECEIVER) {
-                    requestContext
+                    useValues.add(requestContext)
                 } else if (isSimpleDataType(param.type)) {
                     val parmVal = request.getParam(param.name)
 
                     if (parmVal == null && !param.type.isMarkedNullable) {
-                        routeContext.fail(HttpErrorCode("Expected not null parameter ${param.name}, but parameter is missing", 400))
-                        return@handler
+                        throw HttpErrorCode("Expected not null parameter ${param.name}, but parameter is missing", 400)
                     }
 
-                    val temp: Any? = parmVal.whenNotNull {
+                    if (parmVal != null) {
                         try {
-                          //  TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass as Type, param.type.javaType, parmVal)
-                            JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                          // TODO: change to use type converters: TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass as Type, param.type.javaType, parmVal)
+                            val temp: Any = JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                            useValues.add(temp)
                         } catch (ex: Exception) {
-                            throw RuntimeException("Data binding failed due to: ${ex.getMessage()}")
+                            throw RuntimeException("Data binding failed due to: ${ex.message}")
                         }
                     }
-                    temp
+                    else {
+                        useValues.add(null)
+                    }
+
                 } else {
                     // see if parameter has prefixed values in the input parameters that match
                     val parmPrefix = param.name + "."
-                    val tempMap = request.params().entries().filter { it.getKey().startsWith(parmPrefix) }.map { it.getKey().mustNotStartWith(parmPrefix) to it.getValue() }.toMap()
+                    val tempMap = request.params().entries().filter { it.key.startsWith(parmPrefix) }.map { it.key.mustNotStartWith(parmPrefix) to it.value }.toMap()
 
                     if (request.isExpectMultipart() || tempMap.isNotEmpty() || routeContext.getBodyAsString().isNullOrBlank()) {
                         if (tempMap.isEmpty()) {
-                            routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming form, require variables named ${parmPrefix}*, maybe content type application/json was forgotten?"))
-                            return@handler
+                            throw HttpErrorCode("cannot bind parameter ${param.name} from incoming form, require variables named ${parmPrefix}*, maybe content type application/json was forgotten?")
                         }
-                        JSON.convertValue(tempMap, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                        val temp: Any = JSON.convertValue<Any>(tempMap, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                        useValues.add(temp)
                     } else if (usedBodyJsonAlready) {
-                        routeContext.fail(HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
+                        throw HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters")
                     } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json" &&
-                            !routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE).startsWith("application/json;")) {
-                        routeContext.fail(HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters"))
+                               !routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE).startsWith("application/json;")) {
+                        throw HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters")
                     } else {
-                        val temp: Any = try {
+                        try {
                             usedBodyJsonAlready = true
-                            JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.javaType))
+                            val temp: Any = JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.javaType))
+                            useValues.add(temp)
                         } catch (ex: Throwable) {
-                            routeContext.fail(HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.getMessage()}", causedBy = ex))
-                            return@handler
+                            throw HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.message}", causedBy = ex)
                         }
-                        temp
                     }
                 }
-                useValues.add(paramValue)
+
             }
         } catch (rawEx: Throwable) {
             val ex = unwrapInvokeException(rawEx)

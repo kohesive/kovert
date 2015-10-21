@@ -16,7 +16,7 @@ import io.vertx.ext.web.sstore.LocalSessionStore
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import uy.klutter.config.typesafe.KonfigModule
-import uy.klutter.config.typesafe.KonfigRegistrar
+import uy.klutter.config.typesafe.*
 import uy.klutter.core.common.initializedBy
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
@@ -54,7 +54,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
             vertx.promiseDeployVerticle(KovertVerticle(cfg, routerInit, completeThePromise)) success { deploymentId ->
                 LOG.warn("KovertVerticle deployed as ${deploymentId}")
             } fail { failureException ->
-                LOG.error("Vertx deployment failed due to ${failureException.getMessage()}", failureException)
+                LOG.error("Vertx deployment failed due to ${failureException.message}", failureException)
                 deferred.reject(failureException)
             }
             return deferred.promise
@@ -111,7 +111,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
             LOG.warn("API Verticle successfully started")
             onListenerReady(deploymentID())
         } catch (ex: Throwable) {
-            LOG.error("API Verticle failed to start, fatal error.  ${ex.getMessage()}", ex)
+            LOG.error("API Verticle failed to start, fatal error.  ${ex.message}", ex)
             // terminate the app
             throw RuntimeException("Fatal startup error", ex)
         }

@@ -11,11 +11,11 @@ import kotlin.reflect.jvm.javaType
 
 
 public fun isSimpleDataType(type: Class<*>) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.getName())
-public fun <T: Any> isSimpleDataType(type: KClass<T>) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.qualifiedName)
+public fun <T: Any> isSimpleDataType(type: KClass<T>) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.qualifiedName ?: "")
 public fun isSimpleDataType(type: KType) = knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.javaType.erasedType().name)
 
 @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-public val knownSimpleTypes = linkedListOf(Boolean::class, Number::class, String::class,
+public val knownSimpleTypes = linkedListOf<kotlin.reflect.KClass<out kotlin.Any>>(Boolean::class, Number::class, String::class,
         Date::class,
         java.lang.Byte::class, java.lang.Short::class, java.lang.Integer::class, java.lang.Long::class,
         java.lang.Float::class, java.lang.Double::class,  BigDecimal::class)

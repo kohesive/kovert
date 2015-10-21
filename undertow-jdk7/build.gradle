@@ -1,5 +1,5 @@
 dependencies {
-    compile relativeProject(":kovert-core")
+    compile project(":kovert-core")
 
     compile "io.undertow:undertow-core:$version_undertow"
 }

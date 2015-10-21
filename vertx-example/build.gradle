@@ -1,4 +1,4 @@
 dependencies {
-    compile relativeProject(":kovert-vertx")
+    compile project(":kovert-vertx")
     runtime "ch.qos.logback:logback-classic:$version_logback"
 }

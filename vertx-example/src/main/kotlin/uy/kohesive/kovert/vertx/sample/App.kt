@@ -25,7 +25,7 @@ import java.nio.file.Paths
 public class App(val configFile: Path) {
     companion object {
         @JvmStatic public fun main(args: Array<String>) {
-            if (args.size() != 1) {
+            if (args.size != 1) {
                 println("Invalid usage.  ConfigFile parameter is required!")
                 println()
                 println("  usage:  App <configFile>")

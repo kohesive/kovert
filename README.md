@@ -1,4 +1,4 @@
-[![Kotlin M14](https://img.shields.io/badge/Kotlin-M14%20%40%200.14.451-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack](https://img.shields.io/badge/chat-kotlin%20slack-orange.svg)](http://kotlinslackin.herokuapp.com)
+[![Kotlin M14](https://img.shields.io/badge/kotlin-1.0.0--beta--1038-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack](https://img.shields.io/badge/chat-kotlin%20slack-orange.svg)](http://kotlinslackin.herokuapp.com)
 
 # Kovert
 
@@ -17,12 +17,11 @@ In addition, Kovert uses [Klutter/Vertx3](https://github.com/klutter/klutter/tre
 
 #### Maven Dependnecy (Vert.x Version, requires JDK 8)
 
-Include the dependency in your Gradle / Maven projects that are compatible with Kotlin M14 version
-`0.14.x`
+Include the dependency in your Gradle / Maven projects that are setup with Kotlin.
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:0.5.+"
+compile "uy.kohesive.kovert:kovert-vertx:0.6.+"
 ```
 
 **Maven:**
@@ -30,7 +29,7 @@ compile "uy.kohesive.kovert:kovert-vertx:0.5.+"
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
     <artifactId>kovert-vertx</artifactId>
-    <version>[0.5.0,0.6.0)</version>
+    <version>[0.6.0,0.7.0)</version>
 </dependency>
 ```
 

@@ -74,7 +74,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     val controllerAnnotatedVerbAliases = (controller.javaClass.getAnnotation(VerbAliases::class.java)?.value?.toList() ?: emptyList()) +
             listOf(controller.javaClass.getAnnotation(VerbAlias::class.java)).filterNotNull()
 
-    val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values().toList() +
+    val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values.toList() +
             controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
             verbAliases).toMap({ it.prefix }, { it })
 
@@ -172,7 +172,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         if (receiverType.isAssignableFrom(factoryType)) {
             controller
         } else {
-            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
+            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (RoutingContext::class.defaultType.javaType == receiverType.javaType) {
                 EmptyContextFactory
             } else if (contextConstructor != null) {
@@ -187,7 +187,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         if (RoutingContext::class.defaultType.javaType == receiverType.javaType) {
             EmptyContextFactory
         } else {
-            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size() == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
+            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
@@ -229,15 +229,15 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
             context.response().putHeader("location", ex.path).setStatusCode(ex.code).end()
         }
         is IllegalArgumentException -> {
-            logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.getMessage()}", exReport)
+            logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.message}", exReport)
             context.response().setStatusCode(400).setStatusMessage("Invalid parameters").end()
         }
         is HttpErrorCode -> {
-            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.getMessage()}", if (ex.code == 500) ex else exReport)
+            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}", if (ex.code == 500) ex else exReport)
             context.response().setStatusCode(ex.code).setStatusMessage("Error ${ex.code}").end()
         }
         else -> {
-            logger.error("HTTP CODE 500 - ${context.normalisedPath()} - ${ex.getMessage()}", ex)
+            logger.error("HTTP CODE 500 - ${context.normalisedPath()} - ${ex.message}", ex)
             context.response().setStatusCode(500).setStatusMessage("Unhandled error 500").end()
         }
     }

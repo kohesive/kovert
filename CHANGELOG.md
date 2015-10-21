@@ -1,4 +1,13 @@
 =========================================================
+2015-10-06 v0.6.0 release
+=========================================================
+
+* Kotlin to 1.0.0-beta-1038
+* Kovenant to 2.9.0
+* Injekt to 1.8.0
+* Klutter to 0.8.0
+
+=========================================================
 2015-10-06 v0.5.1 release
 =========================================================
 
@@ -10,9 +19,9 @@
 2015-10-01 v0.5.0 release
 =========================================================
 
-Update to Kotlin M14
-Update to Kovenant 2.7.0
-Update to Klutter 0.7.0 and use reflection helpers from there, dropping the local version
+* Update to Kotlin M14
+* Update to Kovenant 2.7.0
+* Update to Klutter 0.7.0 and use reflection helpers from there, dropping the local version
 
 =========================================================
 2015-09-24 v0.4.12 release

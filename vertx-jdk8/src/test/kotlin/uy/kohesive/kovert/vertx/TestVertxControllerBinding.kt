@@ -419,22 +419,22 @@ public class JsonController {
 
     public fun OneContext.findPeopleNamedByName(name: String): List<Person> {
         val people = listOf(Person("Fred", 30), Person("Tom", 20))
-        val matchingPersons = people.groupBy { it.name }.map { it.getKey() to it.getValue() }.toMap().get(name)
-        if (matchingPersons == null || matchingPersons.size() == 0) throw HttpErrorNotFound()
+        val matchingPersons = people.groupBy { it.name }.map { it.key to it.value }.toMap().get(name)
+        if (matchingPersons == null || matchingPersons.size == 0) throw HttpErrorNotFound()
         return matchingPersons
     }
 
     public fun OneContext.findPeopleWithAge(age: Int): List<Person> {
         val people = listOf(Person("Fred", 30), Person("Tom", 20))
-        val matchingPersons = people.groupBy { it.age }.map { it.getKey() to it.getValue() }.toMap().get(age)
-        if (matchingPersons == null || matchingPersons.size() == 0) throw HttpErrorNotFound()
+        val matchingPersons = people.groupBy { it.age }.map { it.key to it.value }.toMap().get(age)
+        if (matchingPersons == null || matchingPersons.size == 0) throw HttpErrorNotFound()
         return matchingPersons
     }
 
     public fun OneContext.findPeopleNamedByNameWithAge(name: String, age: Int): List<Person> {
         val people = listOf(Person("Fred", 30), Person("Tom", 20))
-        val matchingPersons = people.groupBy { it.name }.map { it.getKey() to it.getValue() }.toMap().get(name)?.filter { it.age == age }
-        if (matchingPersons == null || matchingPersons.size() == 0) throw HttpErrorNotFound()
+        val matchingPersons = people.groupBy { it.name }.map { it.key to it.value }.toMap().get(name)?.filter { it.age == age }
+        if (matchingPersons == null || matchingPersons.size == 0) throw HttpErrorNotFound()
         return matchingPersons
     }
 

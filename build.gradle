@@ -16,16 +16,12 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$version_kotlin"
         classpath "org.springframework.build.gradle:propdeps-plugin:0.0.7"
-        classpath "com.prezi.pride:gradle-pride-plugin:0.11"
         classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
         // one day... classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.1-SNAPSHOT"
     }
 }
 
-apply plugin: 'pride'
-
 subprojects {
-    apply plugin: 'pride'
     apply plugin: 'propdeps'
     apply plugin: 'propdeps-maven'
     apply plugin: 'propdeps-idea'
@@ -106,14 +102,6 @@ subprojects {
 
     }
 }
-
-if (rootProject != project) {
-    // if we are not the root project, we must have prezi-pride in a level above, configure it to be able to generate IDE projects
-    configure(rootProject) {
-        apply plugin: 'idea'
-    }
-}
-
 
 subprojects {
     def isExampleApp = name.endsWith("example")

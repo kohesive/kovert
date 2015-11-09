@@ -1,4 +1,4 @@
-[![Kotlin](https://img.shields.io/badge/kotlin-1.0.0--beta--1038-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack](https://img.shields.io/badge/chat-kotlin%20slack-orange.svg)](http://kotlinslackin.herokuapp.com)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.0.0--beta--1103-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack](https://img.shields.io/badge/chat-kotlin%20slack-orange.svg)](http://kotlinslackin.herokuapp.com)
 
 # Kovert
 
@@ -13,7 +13,7 @@ For starting an application with Kovert, you have two options:
 * Configure, Startup Vert-x, deploy a Vert-x verticle, add your routes with Vert-x Web, and _then_ ask Kovert to bind a controller to an existing route.  For that sentence to make sense, you should be familiar with [Vertx-Web](http://vertx.io/docs/vertx-web/java/) and the basics of [Vertx](http://vertx.io/docs/vertx-core/java/)
 * Alternatively, if you just want to get started without knowing too much, [Kovert provides `KovertVertx` and `KovertVerticle` classes](#vertx-and-kovertverticle-startup) that can bootstrap a base application, but this acts more as an example starting point from which you should build your own.
 
-In addition, Kovert uses [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) module which contains helper classes for working with Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional helpers for Vert.x JSON objects, the logging facade, web, and integration with [Injekt](#injekt), and more.
+In addition, Kovert uses [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) module which contains helper classes for working with Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional helpers for Vert.x JSON objects, the logging facade, web, and integration with [Injekt](#injekt), and more.
 
 #### Maven Dependnecy (Vert.x Version, requires JDK 8)
 
@@ -37,7 +37,7 @@ compile "uy.kohesive.kovert:kovert-vertx:0.6.+"
 
 For a full sample, view the [sample REST application](vertx-example/src/main/kotlin/uy/kohesive/kovert/vertx/sample/) to see an example that uses the helper classes `KovertVertx` and `KovertVerticle` to startup and run a vertx server using a configuration file.  
 
-It helps if you are familiar with [Injekt](https://github.com/kohesive/injekt) to completely understand the sample.  Injekt is not required for use of Kovert and can be bypassed, but it helps!  The sample also uses small libraries from [Klutter](https://github.com/klutter/klutter) such as to control configuration loading with Typesafe Config.
+It helps if you are familiar with [Injekt](https://github.com/kohesive/injekt) to completely understand the sample.  Injekt is not required for use of Kovert and can be bypassed, but it helps!  The sample also uses small libraries from [Klutter](https://github.com/kohesive/klutter) such as to control configuration loading with Typesafe Config.
 
 ### Binding a Controller
 
@@ -254,9 +254,9 @@ If you use the `@Verb` annotation on a method, by default the prefix of the meth
 
 #### Vert.x + Kovenant Promises
 
-For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
+For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
 
-See [Klutter/Vertx3](https://github.com/klutter/klutter/tree/master/vertx3) for all Vert.x helper functions include JSON, Vertx-Web, Logging and Injekt modules.
+See [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) for all Vert.x helper functions include JSON, Vertx-Web, Logging and Injekt modules.
 
 #### Vert.x and KovertVerticle startup
 

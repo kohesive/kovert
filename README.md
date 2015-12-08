@@ -1,4 +1,4 @@
-[![Kotlin](https://img.shields.io/badge/kotlin-1.0.0--beta--2423-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack](https://img.shields.io/badge/chat-kotlin%20slack-orange.svg)](http://kotlinslackin.herokuapp.com)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.0.0--beta--3595-blue.svg)](http://kotlinlang.org) [![Maven Version](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22uy.kohesive.kovert%22) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack](https://img.shields.io/badge/chat-kotlin%20slack-orange.svg)](http://kotlinslackin.herokuapp.com)
 
 # Kovert
 
@@ -21,15 +21,15 @@ Include the dependency in your Gradle / Maven projects that are setup with Kotli
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:0.6.+"
+compile "uy.kohesive.kovert:kovert-vertx:0.7.+"
 ```
 
 **Maven:**
 ```
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
-    <artifactId>kovert-vertx</artifactId>
-    <version>[0.6.0,0.7.0)</version>
+    <artifactId>kovert-vertx</artifactId> d
+    <version>[0.7.0,0.8.0)</version>
 </dependency>
 ```
 

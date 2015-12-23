@@ -1,7 +1,7 @@
 package uy.kohesive.kovert.vertx.sample
 
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.async
+import nl.komponents.kovenant.task
 import uy.klutter.core.common.whenNotNull
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.*
@@ -46,7 +46,7 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
     }
 
     public fun ApiKeySecured.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
-        return async {
+        return task {
             val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
             val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
             (byName + byCountry).toSet()

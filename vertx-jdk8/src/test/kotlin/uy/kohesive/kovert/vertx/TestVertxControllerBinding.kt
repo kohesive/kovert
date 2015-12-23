@@ -9,7 +9,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.async
+import nl.komponents.kovenant.task
 import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
@@ -382,11 +382,11 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
     }
 
     public fun OneContext.getPromiseResults(): Promise<String, Exception> {
-        return async { "I promised, I delivered" }
+        return task { "I promised, I delivered" }
     }
 
     public fun OneContext.getPromiseError(): Promise<String, Exception> {
-        return async { throw HttpErrorForbidden() }
+        return task { throw HttpErrorForbidden() }
     }
 
     public fun OneContext.getMissingParameter(parm1: String?, parm2: String): String {

@@ -94,7 +94,7 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) {
     }
 
     public fun ApiKeySecured.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
-        return async {
+        return task {
             val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
             val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
             (byName + byCountry).toSet()
@@ -198,11 +198,11 @@ Any non-String return type becomes JSON automatically using Jackson to serialize
 
 ### Async and Longer Running Handlers 
 
-Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  EVERYTHING that isn't immediately resonsive should use Promises otherwise you block Vert.x IO thread, whereas a Promise dispathces on the Vert.x worker thread.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `async {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
+Returning a Kovenant Promise will unwrap the promise when completed and use the resulting value as the response object.  This allows async methods.  EVERYTHING that isn't immediately resonsive should use Promises otherwise you block Vert.x IO thread, whereas a Promise dispathces on the Vert.x worker thread.  In the sample application, you can see in the company controller that the query method uses a promise return type and returns an `task {}` block of code.  You can also create a `Deferred` instead with more control over your Promise.
 
 ```kotlin
 public fun RestContext.getCompaniesSearch(name: String?, country: String?): Promise<Set<Company>, Exception> {
-    return async {
+    return task {
         val byName: List<Company> = name.whenNotNull { companyService.findCompanyByName(name!!) }.whenNotNull { listOf(it) } ?: emptyList()
         val byCountry: List<Company> = country.whenNotNull { companyService.findCompaniesByCountry(country!!) } ?: emptyList()
         (byName + byCountry).toSet()
@@ -254,7 +254,7 @@ If you use the `@Verb` annotation on a method, by default the prefix of the meth
 
 #### Vert.x + Kovenant Promises
 
-For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `async { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
+For using Vert.x with [Kovenant](http://kovenant.komponents.nl) promises, you should launch Vert.x using one of the [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) helper functions.  If you are NOT using these methods, then call `VertxInit.ensure()` before using your first Kovenant promise, and before using anything that involves data binding with Kovert.  Otherwise, using a helper startup function will do this for you automatically.  Note that you can also use the prettier `task { }` instead of Vert.x `executeBlocking()` when using Kovenant integration.
 
 See [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) for all Vert.x helper functions include JSON, Vertx-Web, Logging and Injekt modules.
 

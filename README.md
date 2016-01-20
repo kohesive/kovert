@@ -2,11 +2,11 @@
 
 # Kovert
 
-The invisible REST (and soon for web) framework.  It is "invisible" since it does not invade your code, not even with annotations.  
+The invisible REST (and WEB) framework.  It is "invisible" since it does not invade your code, and only uses annotations for exception cases (or view rendering).
 
 Kovert is a simple framework that binds your Kotlin classes into your Vert.x 3 (and soon Undertow) routers.  It does not try to replace or rebuild these frameworks and only handles the task of providing the "last mile" binding to your controllers.  From a fairly normal looking Kotlin class, Kovert can infer the route path and parameters.  
 
-This is an experiment to see how far we can get without looking like JAX-RS.  If you want tons of JAX-RS annotations instead of happy Kovert inference, please use [Vertx-Nubes](https://github.com/aesteve/vertx-nubes) for Vert-x and [Kikaha](http://kikaha.skullabs.io) for Undertow, or take a peek at [SparkJava](http://sparkjava.com).
+This framework is opinionated and optimized for easy coding and default behavior typical of most apps.  If you want more control, please use [Vertx-Nubes](https://github.com/aesteve/vertx-nubes) for Vert-x and [Kikaha](http://kikaha.skullabs.io) for Undertow, or take a peek at [SparkJava](http://sparkjava.com).
 
 For starting an application with Kovert, you have two options:
 
@@ -212,9 +212,77 @@ public fun RestContext.getCompaniesSearch(name: String?, country: String?): Prom
 
 When using Kovenant promises, please see the section below about Vert.x + Kovenant.
 
-### HTML Views 
+### HTML Views (or rendering any text based content type)
 
-If you want to render things as HTML, use a return type of String.  That will set the `Content-Type` as HTML and return the string. Soon, view support will come allowing you to add a view annotation that will use the result as a model to render a view given pluggable engines.  Promises can also be returned for views allowing async rendering.  More on that soon... 
+**NOTE:** *NEW AS OF VERSION 0.10*
+
+For rendering HTML or other rendered content you have two options:
+
+* Return anything of type `String` and it will set `Content-Type` of `text/html`
+* Setup a renderer for any controller method
+
+To use a renderer, add the `@Rendered` annotation to any controller method, and provide the template name to render.   The
+return value of the method will be used as the model and will be provided to the template.  This looks like:
+
+```kotlin
+@Rendered("search-results.ftl")
+public fun UserContext.getCompaniesSearch(name: String?, country: String?): Promise<CompanySearchResults, Exception> {
+    ...
+}
+```
+
+In this example, the template engine will be selected by the file extension ".ftl", and the rendering will be passed a model containing and instance of `CompanySearchResults`.
+
+If the code dynamically changes the template to be used, it can provide a empty `@Rendered` annotation and return a `ModelAndRenderTemplate` instance which provides the information about how to render the results.
+
+```kotlin
+@Rendered
+public fun UserContext.getCompaniesSearch(name: String?, country: String?): Promise<ModelAndRenderTemplate, Exception> {
+    return task {
+        ...
+        ModelAndRenderTemplate(searchResults, "search-${searchType}-results.ftl")
+    }
+}
+```
+
+Before using rendering, add the dependency for your rendering engine, and register an instance of `TemplateEngine` via the `KovertConfig.registerTemplateEngine()` method.
+
+```kotlin
+val freemarker = KovertFreemarkerTemplateEngine(configuredFreemarker)
+KovertConfig.registerTemplateEngine(freemarker, ".html.ftl", "text/html") // content-type is optional for text/html
+KovertConfig.registerTemplateEngine(freemarker, ".xml.ftl", "application/xml")
+KovertConfig.registerTemplateEngine(freemarker, ".json.ftl", "application/json")
+```
+
+Template engines are matched from the longest extension to the shortest, so the  most specific wins.  Note that each extension is registered separately with its appropriate Content-Type type.  You can override the content type on any controller method in the `@Rendered` annotation:
+
+```kotlin
+@Rendered("search-results.ftl", "application/xml")
+public fun UserContext.getCompaniesSearch(name: String?, country: String?): Promise<CompanySearchResults, Exception> {
+  ...
+}
+```
+
+**WARNING:** *content type expressed in registration of template engine, or in the @Rendered annotation does not currently affect route matching, but might in the future when it is known at binding time.*
+
+Creating your own template engine is simple, just implement a simple interface `TemplateEngine`, and register an instance of your new engine.  The template engine is always run async so it does not block.  Most implementations are a few lines of code.
+
+```kotlin
+public interface TemplateEngine {
+    fun render(template: String, model: Any): String
+    // throw unknown exception causes error 500,
+    // intentionally throw HttpErrorNotFound if you want a 404
+}
+```
+
+**NOTE:** *Some engines may need to wrap the model and the use of the model will vary by engine (some allow it to be at the "root", others always require it to be named).*
+
+Available template engines:
+
+* [Apache FreeMarker](http://freemarker.org/) - KovertFreemarkerTemplateEngine ([source](template-engine-freemarker/src/main/kotlin/uy/kohesive/kovert/template/freemarker/KovertFreemarkerTemplateEngine.kt), [tests](template-engine-freemarker/src/test/kotlin/uy/kohesive/kovert/template/freemarker/TestKovertFreemarkerTemplateEngine.kt))
+* [Handlebars.java](https://github.com/jknack/handlebars.java) - KovertHandlebarsTemplateEngine ([source](template-engine-handlebars/src/main/kotlin/uy/kohesive/kovert/template/handlebars/KovertHandlebarsTemplateEngine.kt), [tests](template-engine-handlebars/src/test/kotlin/uy/kohesive/kovert/template/handlebars/TestKovertHandlebarsTemplateEngine.kt))
+
+It is up to you to configure the raw template system that the engine uses, including enabling/disabling caching within.
 
 ### Redirects
 

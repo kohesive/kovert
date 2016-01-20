@@ -6,6 +6,7 @@ import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
+import uy.klutter.core.common.whenNotNull
 import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
@@ -114,12 +115,30 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
     }
 
     fun acceptCallable(member: Any, memberName: String, dispatchInstance: Any, callable: KCallable<*>) {
+        val renderAnnotation = callable.annotations.firstOrNull { it is Rendered } as Rendered?
+
+        val rendererInfo  = if (renderAnnotation != null) {
+            val engine = if (renderAnnotation.template.isNullOrBlank()) {
+                null
+            } else {
+                try {
+                    KovertConfig.engineForTemplate(renderAnnotation.template)
+                } catch (ex: Exception) {
+                    logger.error("Ignoring member ${memberName} since it has a render template that cannot be associated with a registered template engine (see KovertConfig.registerTemplateEngine)")
+                    return
+                }
+            }
+            RendererInfo(true, renderAnnotation.template.nullIfBlank(), renderAnnotation.contentType.nullIfBlank(), engine)
+        } else {
+            RendererInfo(false)
+        }
+
         if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE && callable.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
             val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
             val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
             val (verbAndStatus, subPath) = memberNameToPath(memberName, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
             if (verbAndStatus != null) {
-                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable)
+                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable, rendererInfo)
             }
         }
     }
@@ -163,7 +182,7 @@ internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to Http
 
 
 @Suppress("UNCHECKED_CAST")
-private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: KCallable<*>) {
+private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: KCallable<*>, rendererInfo: RendererInfo) {
     val receiverType = dispatchFunction.parameters.first { it.kind == KParameter.Kind.EXTENSION_RECEIVER }.type
 
     val contextFactory = if (controller is ContextFactory<*>) {
@@ -213,10 +232,22 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     val disallowVoid = verbAndStatus.verb == HttpVerb.GET
 
-    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName}")
+    val rendererMsg = if (rendererInfo.enabled) {
+        if (rendererInfo.dynamic) {
+            "-- w/rendering dynamic"
+        } else {
+            "-- w/rendering template '${rendererInfo.template}' [content-type: ${rendererInfo.overrideContentType ?: "default"}] via engine ${rendererInfo.engine!!.javaClass.name}"
+        }
+    } else {
+        ""
+    }
 
-    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode)
+    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName} $rendererMsg")
+
+    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode, rendererInfo)
 }
+
+internal data class RendererInfo(val enabled: Boolean = false, val template: String? = null, val overrideContentType: String? = null, val engine: KovertConfig.RegisteredTemplateEngine? = null, val dynamic: Boolean = template.isNullOrBlank())
 
 internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
     val logger = LoggerFactory.getLogger(controller.javaClass)

@@ -2,6 +2,7 @@
 2015-01-20 v0.10 release
 =========================================================
 
+* Added View rendering (see README for docs)
 * Kotlin to 1.0.0-beta-4589
 * Injekt to 1.11
 * Klutter to 0.12

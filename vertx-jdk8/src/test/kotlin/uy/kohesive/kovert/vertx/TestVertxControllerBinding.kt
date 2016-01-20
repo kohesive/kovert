@@ -1,69 +1,24 @@
 package uy.kohesive.kovert.vertx.test
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import io.vertx.core.Vertx
-import io.vertx.core.http.*
-import io.vertx.core.json.Json
-import io.vertx.ext.unit.TestContext
+import io.vertx.core.http.HttpMethod
 import io.vertx.ext.unit.junit.VertxUnitRunner
-import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
-import org.junit.After
-import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import uy.klutter.core.jdk8.utcNow
-import uy.klutter.vertx.vertx
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.*
 import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import kotlin.properties.Delegates
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
 @RunWith(VertxUnitRunner::class)
-public class TestVertxBinding {
-    var _vertx: Vertx by Delegates.notNull()
-    var _server: HttpServer by Delegates.notNull()
-    var _client: HttpClient by Delegates.notNull()
-    var _router: Router by Delegates.notNull()
-    val _serverPort: Int = 18080
-
-    @Before
-    public fun beforeTest(context: TestContext) {
-        KovertConfig.reportStackTracesOnExceptions = false
-        Json.mapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
-        Json.mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
-        Json.prettyMapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
-        Json.prettyMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
-
-        _vertx = vertx().get()  // use Kotlin wrapper to make sure Kovenent is setup to dispatch with vert.x nicely
-        _router = Router.router(_vertx)
-        _server = _vertx.createHttpServer(HttpServerOptions().setPort(_serverPort).setHost("localhost"))
-        _client = _vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(_serverPort))
-
-        val latch = CountDownLatch(1);
-        _server.requestHandler { _router.accept(it) }.listen { latch.countDown() }
-        latch.await()
-    }
-
-    @After
-    public fun afterTest() {
-        KovertConfig.reportStackTracesOnExceptions = false
-
-        _client.close()
-        val latch = CountDownLatch(1);
-        _server.close {
-            latch.countDown()
-        }
-        latch.await()
-    }
+public class TestVertxControllerBinding : AbstractKovertTest() {
 
     @Test public fun testOneControllerWithAllTraits() {
         val controller = OneControllerWithAllTraits()
@@ -188,7 +143,7 @@ public class TestVertxBinding {
         val controller = JsonController()
         _router.bindController(controller, "/api")
 
-        _client.testServer(HttpMethod.GET, "/api/people", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
+        _client.testServer(HttpMethod.GET, "/api/people", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""", assertContentType = "application/json")
 
         _client.testServer(HttpMethod.GET, "/api/people/named/Fred", assertResponse = """[{"name":"Fred","age":30}]""")
         _client.testServer(HttpMethod.GET, "/api/people/named/Tom", assertResponse = """[{"name":"Tom","age":20}]""")
@@ -278,6 +233,13 @@ public class TestVertxBinding {
         val i = utcNow()
         _client.testServer(HttpMethod.GET, "/api/thing/${i.toEpochMilli()}", assertResponse = "{${i.toEpochMilli()}}")
 
+    }
+
+    @Test public fun testNotFoundBadUrl() {
+        val controller = ControllerWithSpecialTypes()
+        _router.bindController(controller, "/api")
+
+        _client.testServer(HttpMethod.GET, "/api/thingyNotHere", 404)
     }
 }
 
@@ -450,20 +412,24 @@ public class ControllerWithSpecialTypes {
 }
 
 
-@VerbAliases(VerbAlias("find", HttpVerb.GET),VerbAlias("search", HttpVerb.GET),VerbAlias("add", HttpVerb.PUT, 201))
+@VerbAliases(VerbAlias("find", HttpVerb.GET), VerbAlias("search", HttpVerb.GET), VerbAlias("add", HttpVerb.PUT, 201))
 public class JsonControllerManyAliases {
     public fun OneContext.findPeople1(): List<Person> {
         return listOf(Person("Fred", 30), Person("Tom", 20))
     }
+
     public fun OneContext.searchPeople2(): List<Person> {
         return listOf(Person("Fred", 30), Person("Tom", 20))
     }
+
     public fun OneContext.addPerson1(person: Person): Person {
         return person
     }
+
     public fun OneContext.postPerson1(person: Person): Person {
         return person
     }
+
     public fun OneContext.getPerson1(): Person {
         return Person("Fred", 30)
     }

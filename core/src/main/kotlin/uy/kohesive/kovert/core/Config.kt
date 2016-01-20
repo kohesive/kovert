@@ -1,5 +1,9 @@
 package uy.kohesive.kovert.core
 
+import uy.klutter.core.common.whenNotNull
+import uy.klutter.core.jdk.mustStartWith
+import uy.klutter.core.jdk.nullIfBlank
+
 
 public object KovertConfig {
     /**
@@ -34,6 +38,28 @@ public object KovertConfig {
 
     public @Volatile var reportStackTracesOnExceptions: Boolean = false
     public @Volatile var autoAddBodyHandlersOnPutPostPatch: Boolean = true
+
+    public val templateEngines = arrayListOf<RegisteredTemplateEngine>()
+
+    public fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: String, contentType: String = "text/html") {
+        registerTemplateEngine(templateEngine, listOf(recognizeBySuffix), contentType)
+    }
+
+    public fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: List<String>, contentType: String = "text/html") {
+        recognizeBySuffix.forEach {
+            templateEngines.add(RegisteredTemplateEngine(it.mustStartWith('.'), contentType, templateEngine))
+        }
+        // always keep the list longest to shortest extension so more specific matches win
+        templateEngines.sortedByDescending { it.recognizeBySuffix.length }
+    }
+
+    public fun engineForTemplate(template: String): RegisteredTemplateEngine {
+        return template.nullIfBlank().whenNotNull { template ->
+            KovertConfig.templateEngines.firstOrNull { template.endsWith(it.recognizeBySuffix) }
+        } ?: throw Exception("Cannot find render engine for template '${template}' (see KovertConfig.registerTemplateEngine)")
+    }
+
+    data class RegisteredTemplateEngine(val recognizeBySuffix: String, val contentType: String, val templateEngine: TemplateEngine)
 }
 
 public data class PrefixAsVerbWithSuccessStatus(val prefix: String, val verb: HttpVerb, val successStatusCode: Int)

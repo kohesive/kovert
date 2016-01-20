@@ -3,7 +3,9 @@ rootProject.name = "kovert"
 include 'core',
         'vertx',
         'vertx-jdk8',
-        'vertx-example'
+        'vertx-example',
+        'template-engine-freemarker',
+        'template-engine-handlebars'
 //      'undertow',
 //      'undertow-jdk7',
 
@@ -11,6 +13,8 @@ project(':core').name = 'kovert-core'
 project(':vertx').name = 'kovert-vertx'
 project(':vertx-jdk8').name = 'kovert-vertx-jdk8'
 project(':vertx-example').name = 'kovert-vertx-example'
+project(':template-engine-freemarker').name = 'kovert-template-engine-freemarker'
+project(':template-engine-handlebars').name = 'kovert-template-engine-handlebars'
 
 // project(':undertow').name = 'kovert-undertow'
 // project(':undertow-jdk7').name = 'kovert-undertow-jdk7'

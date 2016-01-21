@@ -1,16 +1,17 @@
 package uy.kohesive.kovert.vertx.boot
 
 import io.vertx.core.AbstractVerticle
+import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.net.JksOptions
+import io.vertx.ext.auth.AuthProvider
+import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
-import io.vertx.ext.web.handler.CookieHandler
-import io.vertx.ext.web.handler.LoggerHandler
-import io.vertx.ext.web.handler.SessionHandler
-import io.vertx.ext.web.handler.StaticHandler
+import io.vertx.ext.web.RoutingContext
+import io.vertx.ext.web.handler.*
 import io.vertx.ext.web.sstore.ClusteredSessionStore
 import io.vertx.ext.web.sstore.LocalSessionStore
 import nl.komponents.kovenant.Promise
@@ -18,6 +19,7 @@ import nl.komponents.kovenant.deferred
 import uy.klutter.config.typesafe.KonfigModule
 import uy.klutter.config.typesafe.*
 import uy.klutter.core.common.initializedBy
+import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
 import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
@@ -36,7 +38,7 @@ public object KovertVerticleModule : KonfigModule, InjektModule {
     }
 }
 
-public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
+public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val customization: KovertVerticleCustomization?, val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
     companion object {
         val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVerticle::class.java)
 
@@ -44,14 +46,14 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
          * Deploys a KovertVerticle into a Vertx instance and returns a Promise representing the deployment ID.
          * The HTTP listeners are active before the promise completes.
          */
-        public fun deploy(vertx: Vertx, cfg: KovertVerticleConfig = Injekt.get(), routerInit: Router.() -> Unit): Promise<String, Exception> {
+        public fun deploy(vertx: Vertx, cfg: KovertVerticleConfig = Injekt.get(), customization: KovertVerticleCustomization? = null, routerInit: Router.() -> Unit): Promise<String, Exception> {
             val deferred = deferred<String, Exception>()
             val completeThePromise = fun(id: String): Unit {
                 LOG.warn("KovertVerticle is listening and ready.")
                 deferred.resolve(id)
             }
 
-            vertx.promiseDeployVerticle(KovertVerticle(cfg, routerInit, completeThePromise)) success { deploymentId ->
+            vertx.promiseDeployVerticle(KovertVerticle(cfg, customization, routerInit, completeThePromise)) success { deploymentId ->
                 LOG.warn("KovertVerticle deployed as ${deploymentId}")
             } fail { failureException ->
                 LOG.error("Vertx deployment failed due to ${failureException.message}", failureException)
@@ -63,6 +65,8 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
 
     override fun start() {
         LOG.warn("API Verticle starting")
+        cfg.verify(LOG)
+        customization?.verify(LOG)
 
         val cookieHandler = CookieHandler.create()
         fun cookieHandlerFactory() = cookieHandler
@@ -73,14 +77,53 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
         try {
             val appRouter = Router.router(vertx) initializedBy { router ->
                 router.route().handler(LoggerHandler.create())
+
+                fun applyHandlerToRoutePrefixes(handle: Handler<RoutingContext>, prefixes: List<String>, methods: List<HttpMethod> = emptyList())  {
+                    if (prefixes.isEmpty()) {
+                        val temp = router.route()
+                        methods.forEach { temp.method(it) }
+                        temp.handler(handle)
+                    } else {
+                        prefixes.forEach {
+                            val temp = router.route(it.mustStartWith('/').mustEndWith("/*"))
+                            methods.forEach { temp.method(it) }
+                            temp.handler(handle)
+                        }
+                    }
+                }
+
+                // setup CORS early, so that it prevents other code from running that shouldn't on CORS preflight checks
+                if (customization != null && customization.corsHandler != null) {
+                    applyHandlerToRoutePrefixes(customization.corsHandler, customization.corsHandlerRoutePrefixes)
+                }
+
+                // body handle needs to be very early, or there is a chance the body is received before it is setup to consume it
+                val bodyHandler = BodyHandler.create().setBodyLimit(customization?.bodyHandlerSizeLimit ?: DEFAULT_BODY_HANDLER_LIMIT)
+                applyHandlerToRoutePrefixes(bodyHandler, customization?.bodyHandlerRoutePrefixes ?: emptyList(),
+                        listOf(HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE, HttpMethod.PATCH))
+
+                // TODO: we shouldn't waste effort put cookies on API routes
                 router.route().handler(cookieHandlerFactory())
+                // TODO: same for session handling, we are creating a new session for each API call (because most callers drop cookies on the floor)
                 router.route().method(HttpMethod.GET).method(HttpMethod.PUT).method(HttpMethod.POST).method(HttpMethod.DELETE).method(HttpMethod.PATCH).handler(sessionHandler)
+
+                // TODO: which of the auth providers should be in the API routes, vs. Web + public
+
+                // authentication
+                if (customization != null && customization.authProvider != null) {
+                    val userSessionHandler = UserSessionHandler.create(customization.authProvider)
+                    applyHandlerToRoutePrefixes(userSessionHandler, emptyList(),
+                            listOf(HttpMethod.GET, HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE, HttpMethod.PATCH))
+                }
+
+                // auth handler (checks login, if not does something)
+                if (customization != null && customization.authHandler != null) {
+                    applyHandlerToRoutePrefixes(customization.authHandler, customization.authHandlerRoutePrefixes)
+                }
 
                 // give the user a chance to bind more routes, for example their controllers
                 router.routerInit()
-            }
 
-            appRouter initializedBy { router ->
                 cfg.publicDirs.forEach { mountPoint ->
                     val mountPath = mountPoint.mountAt.mustStartWith('/').mustNotEndWith('/')
                     val mountRoute = if (mountPath.isBlank() || mountPath == "/") {
@@ -90,6 +133,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
                     }
                     LOG.info("Mounting static asset ${mountPoint.dir} at route ${mountPath}")
                     val mountHandler = StaticHandler.create(mountPoint.dir)
+                    // TODO: allow configuration of cache control headers for StaticHandler
                     mountRoute.handler(mountHandler)
                 }
             }
@@ -118,9 +162,28 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
     }
 }
 
+internal val DEFAULT_BODY_HANDLER_LIMIT: Long = 32 * 1024
+
+public data class KovertVerticleCustomization(
+        val bodyHandlerRoutePrefixes: List<String> = emptyList(),
+        val bodyHandlerSizeLimit: Long = DEFAULT_BODY_HANDLER_LIMIT,
+        val corsHandler: CorsHandler? = null,
+        val corsHandlerRoutePrefixes: List<String> = emptyList(),
+        val authProvider: AuthProvider? = null,
+        val authHandler: AuthHandler? = null,
+        val authHandlerRoutePrefixes: List<String> = emptyList()) {
+    fun verify(LOG: Logger) {
+        // TODO: check that the right combination of parameters exist or throw exception
+    }
+}
+
 public data class KovertVerticleConfig(val listeners: List<HttpListenerConfig>,
                                        val publicDirs: List<DirMountConfig>,
-                                       val sessionTimeoutInHours: Int)
+                                       val sessionTimeoutInHours: Int) {
+    fun verify(LOG: Logger) {
+        // TODO: check that the right combination of parameters exist or throw exception
+    }
+}
 
 public data class HttpListenerConfig(val host: String, val port: Int, val ssl: HttpSslConfig?)
 public data class HttpSslConfig(val enabled: Boolean, val keyStorePath: String?, val keyStorePassword: String?)

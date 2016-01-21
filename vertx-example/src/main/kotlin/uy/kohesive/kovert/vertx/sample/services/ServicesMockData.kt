@@ -1,4 +1,4 @@
-package uy.kohesive.kovert.vertx.sample
+package uy.kohesive.kovert.vertx.sample.services
 
 internal val mockData_companyByName = hashMapOf(*listOf(
         Company("Collokia", "Uruguay"),
@@ -12,4 +12,5 @@ internal val mockData_peopleById = hashMapOf(*listOf(
         Person(4, "Lucia", 31, mockData_companyByName.get("bremeld"))).map { it.id to it }.toTypedArray())
 
 
-internal val mockData_validApiKeys = mapOf("apiKey12345" to User(1, "franky"), "apiKey54321" to User(2, "jdavidson"))
+internal val mockData_validUsers = listOf(User("franky"), User("jdavidson"))
+internal val mockData_validApiKeys = mapOf("apiKey12345" to mockData_validUsers[0], "apiKey54321" to mockData_validUsers[1])

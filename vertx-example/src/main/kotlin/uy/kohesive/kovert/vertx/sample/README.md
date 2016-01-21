@@ -10,12 +10,26 @@ To test the application using Curl, you must provide an `Authorization` header f
 
 ```
 $ curl -i -X GET 'http://localhost:8080/api/companies/search?country=uruguay&name=collokia' -H "Authorization: apiKey12345"
+
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 80
-Set-Cookie: vertx-web.session=5e98a12f-c019-4c36-8600-9b05bd578db5; Path=/
 
 [{"name":"Collokia","country":"Uruguay"},{"name":"Bremeld","country":"Uruguay"}]
+
+$ curl -i -X PUT 'http://localhost:8080/api/company/testCompany' -H 'Content-Type:application/json' --data '{"name":"testCompany","country":"Russia"}' -H "Authorization: apiKey12345"
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"name":"testCompany","country":"Russia"}
+
+$ curl -i -X GET 'http://localhost:8080/api/companies/search?country=Russia' -H "Authorization: apiKey12345"
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[{"name":"testCompany","country":"Russia"}]
 ```
+
 
 

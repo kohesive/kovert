@@ -67,10 +67,10 @@ class ApiKeySecured(private val routingContext: RoutingContext) {
 }
 ```
 
-With the dispatch object selected, write your controller.  Here is the CompanyController from the sample app:
+With the dispatch object selected, write your controller.  Here is the CompanyRestController from the sample app:
 
 ```kotlin
-class CompanyController(val companyService: CompanyService = Injekt.get()) {
+class CompanyRestController(val companyService: CompanyService = Injekt.get()) {
     public fun ApiKeySecured.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
     public fun ApiKeySecured.putCompanyByName(name: String, company: Company): Company {
@@ -148,12 +148,12 @@ All routing path and parameter decisions are logged to the current logger, so  y
 Which I can confirm by viewing my log output (notice it logs from my controller class):
 
 ```
-11:41:20.880 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompanyByName to HTTP GET:200 /api/company/:name w/context ApiKeySecured
-11:41:20.882 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding listCompanyByNameEmployees to HTTP GET:200 /api/company/:name/employees w/context ApiKeySecured
-11:41:20.883 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesNamedByName to HTTP GET:200 /api/companies/named/:name w/context ApiKeySecured
-11:41:20.884 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding putCompanyByName to HTTP PUT:200 /api/company/:name w/context ApiKeySecured
-11:41:20.885 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding findCompaniesLocatedInCountry to HTTP GET:200 /api/companies/located/:country w/context ApiKeySecured
-11:41:20.886 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyController - Binding getCompaniesSearch to HTTP GET:200 /api/companies/search w/context ApiKeySecured
+11:41:20.880 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyRestController - Binding getCompanyByName to HTTP GET:200 /api/company/:name w/context ApiKeySecured
+11:41:20.882 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyRestController - Binding listCompanyByNameEmployees to HTTP GET:200 /api/company/:name/employees w/context ApiKeySecured
+11:41:20.883 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyRestController - Binding findCompaniesNamedByName to HTTP GET:200 /api/companies/named/:name w/context ApiKeySecured
+11:41:20.884 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyRestController - Binding putCompanyByName to HTTP PUT:200 /api/company/:name w/context ApiKeySecured
+11:41:20.885 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyRestController - Binding findCompaniesLocatedInCountry to HTTP GET:200 /api/companies/located/:country w/context ApiKeySecured
+11:41:20.886 [vert.x-eventloop-thread-2] INFO  u.k.k.vertx.sample.CompanyRestController - Binding getCompaniesSearch to HTTP GET:200 /api/companies/search w/context ApiKeySecured
 ```
 
 ### Path Parameters

@@ -2,7 +2,10 @@
 2015-01-20 v0.10 release
 =========================================================
 
-* Added View rendering (see README for docs)
+* Added View rendering for FreeMarker and Handlebars (see README for docs)
+* BREAKING:  Changed default for setting `KovertConfig.autoAddBodyHandlersOnPutPostPatch` to `false` and now is readonly, it will be removed soon since body handler needs to be added very early, this doesn't work reliably.
+* BREAKING:  `KovertVerticleConfig` now requires setting a list of path prefixes that need a body handler
+* BREAKING:  `KovertVerticleConfig` now can have a CORS handler set and route prefixes, which will be added to the verticle in the correct routing positino
 * Kotlin to 1.0.0-beta-4589
 * Injekt to 1.11
 * Klutter to 0.12

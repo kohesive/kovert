@@ -1,9 +1,12 @@
-package uy.kohesive.kovert.vertx.sample
+package uy.kohesive.kovert.vertx.sample.api
 
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
+import uy.kohesive.kovert.vertx.sample.services.PeopleService
+import uy.kohesive.kovert.vertx.sample.services.Person
+import uy.kohesive.kovert.vertx.sample.services.CompanyService
 
 /**
  * This will create the follow routes (when bound at "api"):
@@ -15,7 +18,7 @@ import uy.kohesive.kovert.core.HttpErrorNotFound
  * GET api/people/employeed/:company
  *
  */
-class PeopleController(val peopleService: PeopleService = Injekt.get(), val companyService: CompanyService = Injekt.get()) {
+class PeopleRestController(val peopleService: PeopleService = Injekt.get(), val companyService: CompanyService = Injekt.get()) {
     public fun ApiKeySecured.getPersonById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
 
     public fun ApiKeySecured.putPersonById(id: Int, person: Person): Person {

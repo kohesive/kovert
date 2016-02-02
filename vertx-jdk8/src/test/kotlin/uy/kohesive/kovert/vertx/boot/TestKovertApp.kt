@@ -30,6 +30,7 @@ import uy.kohesive.kovert.vertx.boot.*
 import uy.kohesive.kovert.vertx.test.testServer
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.*
 
 
 class TestKovertApp {
@@ -161,12 +162,12 @@ class PeopleService {
         }
     }
 
-    private val people = hashMapOf(*listOf(
+    private val people = listOf(
             Person(1, "Frank", 30),
             Person(2, "Domingo", 19),
             Person(3, "Mariana", 22),
             Person(4, "Lucia", 31)
-    ).map { it.id to it }.toTypedArray())
+    ).associateByTo(HashMap()) { it.id }
 
     public fun findPersonById(id: Int): Person? = people.get(id)
     public fun findPersonsByName(name: String): List<Person> = people.values.filter { it.name.equals(name, ignoreCase = true) }

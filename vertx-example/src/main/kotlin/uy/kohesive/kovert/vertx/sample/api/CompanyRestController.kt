@@ -1,4 +1,4 @@
-package uy.kohesive.kovert.vertx.sample
+package uy.kohesive.kovert.vertx.sample.api
 
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
@@ -7,6 +7,9 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
+import uy.kohesive.kovert.vertx.sample.services.Person
+import uy.kohesive.kovert.vertx.sample.services.Company
+import uy.kohesive.kovert.vertx.sample.services.CompanyService
 
 /**
  * This will create the follow routes (when bound at "api"):
@@ -22,7 +25,7 @@ import uy.kohesive.kovert.core.HttpErrorNotFound
  * GET api/companies/search?name=xyz&country=abc
  *
  */
-class CompanyController(val companyService: CompanyService = Injekt.get()) {
+class CompanyRestController(val companyService: CompanyService = Injekt.get()) {
     public fun ApiKeySecured.getCompanyByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
 
     public fun ApiKeySecured.putCompanyByName(name: String, company: Company): Company {

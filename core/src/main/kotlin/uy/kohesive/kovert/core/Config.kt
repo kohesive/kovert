@@ -37,7 +37,9 @@ public object KovertConfig {
     }
 
     public @Volatile var reportStackTracesOnExceptions: Boolean = false
-    public @Volatile var autoAddBodyHandlersOnPutPostPatch: Boolean = true
+
+    @Deprecated("This setting should go away, please add your own body handler very early")
+    public val autoAddBodyHandlersOnPutPostPatch: Boolean = false
 
     public val templateEngines = arrayListOf<RegisteredTemplateEngine>()
 

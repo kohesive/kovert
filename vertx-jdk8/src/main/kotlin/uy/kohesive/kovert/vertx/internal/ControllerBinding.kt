@@ -77,7 +77,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
 
     val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values.toList() +
             controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
-            verbAliases).toMapBy({ it.prefix }, { it })
+            verbAliases).associateBy({ it.prefix }, { it })
 
     fun memberNameToPath(name: String, knownVerb: VerbWithSuccessStatus?, knownLocation: String?, skipPrefix: Boolean): Pair<VerbWithSuccessStatus?, String> {
         // split camel cases, with underscores also acting as split point then ignored
@@ -223,6 +223,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     val finalRoutePath = fullPath.nullIfBlank() ?: "/"
     val vertxVerb = verbToVertx.get(verbAndStatus.verb)!!
 
+    @Suppress("DEPRECATION")
     if (KovertConfig.autoAddBodyHandlersOnPutPostPatch && (verbAndStatus.verb == HttpVerb.POST || verbAndStatus.verb == HttpVerb.PUT || verbAndStatus.verb == HttpVerb.PATCH)) {
         // TODO: configure body max size elsewhere
         router.route(finalRoutePath).method(vertxVerb).handler(BodyHandler.create().setBodyLimit(8 * 1024))

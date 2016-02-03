@@ -41,3 +41,15 @@ public annotation class Location(val path: String)
 @Target(AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
 public annotation class Rendered(val template: String = "", val contentType: String = "")
 
+
+/**
+ * Set an authority for accessing a resource, the auth handler must be in place to authorize the resource against the current user.
+ * This can be placed on the controller, or individual resource within the controller.
+ *
+ * @param role which roles to authorize using the resource.  No role means "only logged in is ok"
+ */
+/* TODO: implement
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION,  AnnotationTarget.CLASS)
+public annotation class Authority(vararg val role: String)
+*/

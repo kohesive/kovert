@@ -30,6 +30,7 @@ import uy.kohesive.kovert.vertx.boot.*
 import uy.kohesive.kovert.vertx.test.testServer
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.*
 
 
 class TestKovertApp {
@@ -40,21 +41,21 @@ class TestKovertApp {
             val client = deployment.vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(Injekt.get<KovertVerticleConfig>().listeners.first().port))
 
             val frankJson = """{"id":1,"name":"Frank","age":30}"""
-            client.testServer(HttpMethod.GET, "person/1", assertResponse = frankJson)
-            client.testServer(HttpMethod.GET, "person/id/1", assertResponse = frankJson)
-            client.testServer(HttpMethod.GET, "person/name/frank", assertResponse = """[$frankJson]""")
+            client.testServer(HttpMethod.GET, "api/person/1", assertResponse = frankJson)
+            client.testServer(HttpMethod.GET, "api/person/id/1", assertResponse = frankJson)
+            client.testServer(HttpMethod.GET, "api/person/name/frank", assertResponse = """[$frankJson]""")
 
-            client.testServer(HttpMethod.GET, "person/id/1991991", assertStatus = 404)
-            client.testServer(HttpMethod.GET, "person/name/doogie", assertStatus = 404)
+            client.testServer(HttpMethod.GET, "api/person/id/1991991", assertStatus = 404)
+            client.testServer(HttpMethod.GET, "api/person/name/doogie", assertStatus = 404)
 
             client.testServer(HttpMethod.GET, "/index.html", assertResponse = """<html><head></head><body>Shhhh!</body></html>""")
 
             client.testServer(HttpMethod.GET, "/something/funky", assertResponse = "\"Funky\"")
 
             val collokiaJson = """{"name":"Collokia","country":"Uruguay"}"""
-            client.testServer(HttpMethod.GET, "company/Collokia", assertResponse = """{"status":"OK","data":$collokiaJson}""")
-            client.testServer(HttpMethod.GET, "company/name/Collokia", assertResponse = """{"status":"OK","data":$collokiaJson}""")
-            client.testServer(HttpMethod.GET, "company/country/Uruguay", assertResponse = """{"status":"OK","data":[$collokiaJson,{"name":"Bremeld","country":"Uruguay"}]}""")
+            client.testServer(HttpMethod.GET, "api/company/Collokia", assertResponse = """{"status":"OK","data":$collokiaJson}""")
+            client.testServer(HttpMethod.GET, "api/company/name/Collokia", assertResponse = """{"status":"OK","data":$collokiaJson}""")
+            client.testServer(HttpMethod.GET, "api/company/country/Uruguay", assertResponse = """{"status":"OK","data":[$collokiaJson,{"name":"Bremeld","country":"Uruguay"}]}""")
 
         } finally {
             deployment.vertx.promiseUndeploy(deployment.deploymentId).get()
@@ -95,8 +96,8 @@ public class KovertApp(val configFile: Path) {
         KovertConfig.addVerbAlias("find", HttpVerb.GET)
 
         val initControllers = fun Router.(): Unit {
-            bindController(PeopleController(), "/person")
-            bindController(CompanyController(), "/company")
+            bindController(PeopleController(), "/api/person")
+            bindController(CompanyController(), "/api/company")
             bindController(RootController(), "/")
         }
 
@@ -161,12 +162,12 @@ class PeopleService {
         }
     }
 
-    private val people = hashMapOf(*listOf(
+    private val people = listOf(
             Person(1, "Frank", 30),
             Person(2, "Domingo", 19),
             Person(3, "Mariana", 22),
             Person(4, "Lucia", 31)
-    ).map { it.id to it }.toTypedArray())
+    ).associateByTo(HashMap()) { it.id }
 
     public fun findPersonById(id: Int): Person? = people.get(id)
     public fun findPersonsByName(name: String): List<Person> = people.values.filter { it.name.equals(name, ignoreCase = true) }

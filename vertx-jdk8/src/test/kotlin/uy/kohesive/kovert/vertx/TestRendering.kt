@@ -63,7 +63,7 @@ public class TestRendering: AbstractKovertTest() {
 
 }
 
-private open class MockViewEngine(val id: String): TemplateEngine {
+internal open class MockViewEngine(val id: String): TemplateEngine {
     override fun render(template: String, model: Any): String{
         return "mocked:$id -- [$template] -- ${model}"
     }
@@ -72,7 +72,7 @@ private open class MockViewEngine(val id: String): TemplateEngine {
     override fun equals(other: Any?): Boolean = other is MockViewEngine && other.id == id
 }
 
-private class MockController1 {
+internal class MockController1 {
     @Rendered("test.mock1")
     public fun RoutingContext.getTestMockView1(): Model1 = Model1("Fred", 33)
 
@@ -105,4 +105,4 @@ private class MockController1 {
 
 }
 
-private data class Model1(val name: String, val age: Int)
+internal data class Model1(val name: String, val age: Int)

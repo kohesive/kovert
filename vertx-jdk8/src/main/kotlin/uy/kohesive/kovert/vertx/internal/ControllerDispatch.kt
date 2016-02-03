@@ -36,7 +36,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         val requestContext = contextFactory.createContext(routeContext)
 
         val request = routeContext.request()
-        val useValues = linkedListOf<Any?>()
+        val useValues = mutableListOf<Any?>()
         var usedBodyJsonAlready = false
 
         try {
@@ -164,9 +164,9 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         try {
             // dispatch via intercept, or directly depending on the controller
             val result: Any? = if (controller is InterceptDispatch<*>) {
-                (controller as InterceptDispatch<Any>)._internal(requestContext, member, { dispatchFunction.call(*useValues.toArray()) })
+                (controller as InterceptDispatch<Any>)._internal(requestContext, member, { dispatchFunction.call(*useValues.toTypedArray()) })
             } else {
-                dispatchFunction.call(*useValues.toArray())
+                dispatchFunction.call(*useValues.toTypedArray())
             }
 
             // if a promise, need to wait for it to succeed or fail

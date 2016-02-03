@@ -1,4 +1,6 @@
 dependencies {
     compile project(":kovert-vertx")
+    compile project(":kovert-template-engine-freemarker")
     runtime "ch.qos.logback:logback-classic:$version_logback"
+    runtime "ch.qos.logback:logback-access:$version_logback"
 }

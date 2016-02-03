@@ -9,6 +9,7 @@ import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.Json
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.BodyHandler
 import org.junit.After
 import org.junit.Before
 import uy.klutter.vertx.vertx
@@ -33,6 +34,7 @@ abstract class AbstractKovertTest {
 
         _vertx = vertx().get()  // use Kotlin wrapper to make sure Kovenent is setup to dispatch with vert.x nicely
         _router = Router.router(_vertx)
+        _router.route().handler(BodyHandler.create())
         _server = _vertx.createHttpServer(HttpServerOptions().setPort(_serverPort).setHost("localhost"))
         _client = _vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(_serverPort))
 

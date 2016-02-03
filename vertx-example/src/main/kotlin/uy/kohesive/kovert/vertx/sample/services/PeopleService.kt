@@ -1,4 +1,4 @@
-package uy.kohesive.kovert.vertx.sample
+package uy.kohesive.kovert.vertx.sample.services
 
 import uy.kohesive.injekt.api.*
 

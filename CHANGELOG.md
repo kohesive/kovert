@@ -1,5 +1,16 @@
 =========================================================
-2015-02-02 v0.10-RC-1025 release
+2015-02-02 v0.10.2-RC-1036 release
+=========================================================
+
+This is interim release for Kotlin 1.0 public release candidates, view support is in progress (see breaking changes below in 0.10.0)
+
+* Kotlin to 1.0.0-rc-1036
+* Injekt to 1.12.0-RC-1036
+* Klutter to 0.13.3-RC-1036
+* Kovenant to 3.0.0-rc.1036
+
+=========================================================
+2015-02-02 v0.10.0-RC-1025 release
 =========================================================
 
 This is interim release for Kotlin 1.0 RC release candidate compatibility, view support is in progress and only partial in this release

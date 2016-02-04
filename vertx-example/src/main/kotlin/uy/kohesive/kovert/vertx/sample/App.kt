@@ -132,7 +132,7 @@ public class App(val configFile: Path) {
                 authHandlerRoutePrefixes = listOf(privateMountPoint)
         )
 
-        // startup synchronously...
+        // startup asynchronously...
         KovertVertx.start(workingDir = configFileLocation) bind { vertx ->
             KovertVerticle.deploy(vertx, customization = appCustomization, routerInit = initControllers)
         } success { deploymentId ->

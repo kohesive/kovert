@@ -4,6 +4,8 @@
 
 * Klutter to 0.13.4-RC-1050
 * Jackson-Kotlin module to 2.6.5-RC-1050
+* Kotlin to 1.0.0-rc-1050
+* Kovenant to 3.0.0-rc.1050
 
 =========================================================
 2015-02-04 v0.10.3-RC-1036 release

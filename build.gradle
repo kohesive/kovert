@@ -14,12 +14,6 @@ buildscript {
         maven {
             url 'http://dl.bintray.com/kotlin/kotlin-eap'
         }
-        maven {
-            url 'http://dl.bintray.com/jaysonminard/kohesive'
-        }
-        maven {
-            url 'http://dl.bintray.com/mplatvoet/komponents'
-        }
     }
     //noinspection GroovyAssignabilityCheck
     dependencies {

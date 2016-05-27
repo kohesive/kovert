@@ -1,6 +1,9 @@
 package uy.kohesive.kovert.vertx.internal
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.netty.handler.codec.http.HttpHeaders
 import io.vertx.core.http.HttpMethod
+import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Router
@@ -263,6 +266,33 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
         is IllegalArgumentException -> {
             logger.error("HTTP CODE 400 - ${context.normalisedPath()} - ${ex.message}", exReport)
             context.response().setStatusCode(400).setStatusMessage("Invalid parameters").end()
+        }
+        is HttpErrorCodeWithBody -> {
+            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}", if (ex.code == 500) ex else exReport)
+            if (ex.body is String) {
+                context.response()
+                        .setStatusCode(ex.code)
+                        .setStatusMessage("Error ${ex.code}")
+                        .putHeader(HttpHeaders.Names.CONTENT_TYPE, "text/html")
+                        .end(ex.body as String)
+            } else {
+                val contentType = "application/json"
+                if (ex.body is Void || ex.body is Unit || ex.body is Nothing) {
+                    context.response()
+                            .setStatusCode(ex.code)
+                            .setStatusMessage("Error ${ex.code}")
+                            .putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType)
+                            .end()
+                } else {
+                    val JSON: ObjectMapper = Json.mapper
+                    context.response()
+                            .setStatusCode(ex.code)
+                            .setStatusMessage("Error ${ex.code}")
+                            .putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType)
+                            .end(JSON.writeValueAsString(ex.body))
+                }
+            }
+
         }
         is HttpErrorCode -> {
             logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}", if (ex.code == 500) ex else exReport)

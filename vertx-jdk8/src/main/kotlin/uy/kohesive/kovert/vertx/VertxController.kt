@@ -1,6 +1,8 @@
 package uy.kohesive.kovert.vertx
 
 import io.vertx.ext.web.Router
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.InjektScope
 import uy.kohesive.kovert.core.PrefixAsVerbWithSuccessStatus
 import uy.kohesive.kovert.core.knownSimpleTypes
 import uy.kohesive.kovert.vertx.internal.bindControllerController
@@ -25,7 +27,10 @@ private object KovertConfigUpdateJdk8 {
                 ZoneId::class,
                 ZoneOffset::class,
                 LocalTime::class,
-                OffsetTime::class))
+                OffsetTime::class)
+                .map { listOf(it.javaPrimitiveType, it.javaObjectType) }
+                .flatten()
+                .filterNotNull())
     }
 
     @Suppress("NOTHING_TO_INLINE")

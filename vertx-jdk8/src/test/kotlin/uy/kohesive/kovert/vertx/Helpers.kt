@@ -71,10 +71,9 @@ public fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: I
         }
     }).get()
 
-    assertEquals(assertStatus, result.statusCode, "Eror with ${verb} at ${path}")
-    if (result.statusCode < 300) {
-        // only care about the body on success codes (unless we are testing that they are blank for other reasons)
-        assertEquals(assertResponse, result.body, "Eror with ${verb} at ${path}")
+    assertEquals(assertStatus, result.statusCode, "Error with ${verb} at ${path}, wrong status code.  expected $assertStatus, but received ${result.statusCode}")
+    if (assertResponse != null) {
+        assertEquals(assertResponse, result.body, "Error with ${verb} at ${path}, wrong body response.  expected: \n$assertResponse\nbyt received:\n${result.body}")
     }
     if (assertContentType != null) {
         assertEquals(assertContentType, result.headers.get(HttpHeaders.CONTENT_TYPE))

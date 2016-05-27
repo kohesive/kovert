@@ -1,4 +1,16 @@
 =========================================================
+2015-05-27 v0.13.0
+=========================================================
+
+* Kotlin to 1.0.2
+* Injekt to 1.16.1
+* Klutter to 1.18.0
+* Fix allowing nullable booleans as type for parameters of controller methods
+* Enums can now be used as type for parameters of controller methods
+* Default values can now be used in parameters of controller methods (simple and complex types)
+* Support throwing HttpErrorCodeWithBody to return a body with error code (Object as "application/json" or String as "text/html")
+
+=========================================================
 2015-02-15 v0.12.0
 =========================================================
 

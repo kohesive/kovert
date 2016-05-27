@@ -17,10 +17,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
-@RunWith(VertxUnitRunner::class)
-public class TestVertxControllerBinding : AbstractKovertTest() {
+@RunWith(VertxUnitRunner::class) class TestVertxControllerBinding : AbstractKovertTest() {
 
-    @Test public fun testOneControllerWithAllTraits() {
+    @Test fun testOneControllerWithAllTraits() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
 
@@ -52,7 +51,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
     }
 
 
-    @Test public fun testOneControllerWithAllTraitsFails() {
+    @Test fun testOneControllerWithAllTraitsFails() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
 
@@ -86,7 +85,22 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
         assertTrue(controller.aFailure)
     }
 
-    @Test public fun testRoutingContextNaturally() {
+    @Test fun testBodyReturnedWithErrorCode() {
+        val controller = OneControllerWithAllTraits()
+        _router.bindController(controller, "/one")
+
+        KovertConfig.reportStackTracesOnExceptions = true
+
+        _client.testServer(HttpMethod.GET, "/one/but/fail409/string/body", 409, assertResponse = "String Body")
+        assertTrue(controller.aFailure)
+
+        controller.reset()
+
+        _client.testServer(HttpMethod.GET, "/one/but/fail409/json/body", 409, assertResponse = """{"status":"error","reason":"Not valid thingy"}""")
+        assertTrue(controller.aFailure)
+    }
+
+    @Test fun testRoutingContextNaturally() {
         _router.bindController(OneControllerWithAllTraits(), "/one")
         _router.bindController(ContextTestController(), "/two")
 
@@ -95,7 +109,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
 
     }
 
-    @Test public fun testOneControllerWithAllTraitsRedirects() {
+    @Test fun testOneControllerWithAllTraitsRedirects() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
 
@@ -120,13 +134,27 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
 
     }
 
-    @Test public fun testOneControllerWithNullableParm() {
+    @Test fun testOneControllerWithNullableParm() {
         _router.bindController(OneControllerWithAllTraits(), "/one")
         _client.testServer(HttpMethod.GET, "/one/missing/parameter?parm2=happy", assertResponse = "null happy")
 
     }
 
-    @Test public fun testOneControllerWithAllTraitsPromisedResult() {
+    @Test fun testOneControllerWithDefaultableParm() {
+        _router.bindController(OneControllerWithAllTraits(), "/one")
+        _client.testServer(HttpMethod.GET, "/one/missing/defaultable?parm2=happy", assertResponse = "sad happy Defaulted")
+
+        _client.testServer(HttpMethod.GET, "/one/missing/defaultable?parm2=happy&parm3.contents=notDefaulted", assertResponse = "sad happy notDefaulted")
+    }
+
+    // getOtherTypesIncludingNullables
+    @Test fun testOneControllerWithOtherParamTypes() {
+        _router.bindController(OneControllerWithAllTraits(), "/one")
+        _client.testServer(HttpMethod.GET, "/one/other/types/including/nullables?parm3=TWO", assertResponse = "null null TWO null")
+        _client.testServer(HttpMethod.GET, "/one/other/types/including/nullables?parm1=true&parm2=fish&parm3=TWO&parm4=THREE", assertResponse = "true fish TWO THREE")
+    }
+
+    @Test fun testOneControllerWithAllTraitsPromisedResult() {
         val controller = OneControllerWithAllTraits()
         _router.bindController(controller, "/one")
 
@@ -139,7 +167,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
     }
 
 
-    @Test public fun testJsonResponses() {
+    @Test fun testJsonResponses() {
         val controller = JsonController()
         _router.bindController(controller, "/api")
 
@@ -161,7 +189,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/people2/named/Tom/age/20", assertResponse = """[{"name":"Tom","age":20}]""")
     }
 
-    @Test public fun testVerbAlisesMore() {
+    @Test fun testVerbAlisesMore() {
         val controller = JsonControllerManyAliases()
         _router.bindController(controller, "/verby")
 
@@ -175,7 +203,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
 
     }
 
-    @Test public fun testAltContentTypeWithEncoding() {
+    @Test fun testAltContentTypeWithEncoding() {
         val controller = JsonControllerManyAliases()
         _router.bindController(controller, "/verby")
 
@@ -183,7 +211,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
         _client.testServerAltContentType(HttpMethod.POST, "verby/person1", writeJson = """{ "name": "Fred", "age": 30 }""", assertStatus = 200, assertResponse = """{"name":"Fred","age":30}""")
     }
 
-    @Test public fun testOtherAnnotations() {
+    @Test fun testOtherAnnotations() {
         val controller = AnnotationsInsideController()
         _router.bindController(controller, "/api")
 
@@ -194,7 +222,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/what/is/this/method5/MAYBE", assertResponse = """{"status":"MAYBE"}""")
     }
 
-    @Test public fun testParameterBinding() {
+    @Test fun testParameterBinding() {
         val controller = ParameterBindingController()
         _router.bindController(controller, "/api")
 
@@ -203,7 +231,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/something/having/two/complex/parameters?parm1.name=Fred&parm1.age=30&parm2.name=Tom&parm2.age=20", assertResponse = """[{"name":"Fred","age":30},{"name":"Tom","age":20}]""")
     }
 
-    @Test public fun testJsonBody() {
+    @Test fun testJsonBody() {
         val controller = ParameterBindingController()
         _router.bindController(controller, "/api")
 
@@ -216,7 +244,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
 
     }
 
-    @Test public fun testMemberVarFunctions() {
+    @Test fun testMemberVarFunctions() {
         val controller = MemberVarController()
         _router.bindController(controller, "/api")
 
@@ -226,7 +254,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
     }
 
     @Ignore("Need to figure out why the jackson bindings for Instant sometimes go bonkers")
-    @Test public fun testSpecialTypes() {
+    @Test fun testSpecialTypes() {
         val controller = ControllerWithSpecialTypes()
         _router.bindController(controller, "/api")
 
@@ -235,7 +263,7 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
 
     }
 
-    @Test public fun testNotFoundBadUrl() {
+    @Test fun testNotFoundBadUrl() {
         val controller = ControllerWithSpecialTypes()
         _router.bindController(controller, "/api")
 
@@ -243,16 +271,15 @@ public class TestVertxControllerBinding : AbstractKovertTest() {
     }
 }
 
-public class MemberVarController() {
-    public val getFirstTest = fun TwoContext.(): String = "FirstTest"
-    public val getSecondTest = fun TwoContext.(parm: Int): String = "SecondTest ${parm}"
+class MemberVarController() {
+    val getFirstTest = fun TwoContext.(): String = "FirstTest"
+    val getSecondTest = fun TwoContext.(parm: Int): String = "SecondTest ${parm}"
 
     @Location("third/test")
-    @Verb(HttpVerb.POST)
-    public val getThirdyBaby = fun TwoContext.(parm: String): String = "ThirdTest ${parm}"
+    @Verb(HttpVerb.POST) val getThirdyBaby = fun TwoContext.(parm: String): String = "ThirdTest ${parm}"
 }
 
-public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<Any>, InterceptRequestFailure, ContextFactory<OneContext> {
+class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<Any>, InterceptRequestFailure, ContextFactory<OneContext> {
     var aRequest: Boolean = false
     var aDispatch: Boolean = false
     var aDispatchMember: Any? = null
@@ -261,7 +288,7 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
     var aFailureCode: Int = 0
     var aContextCreated: Boolean = false
 
-    public fun reset() {
+    fun reset() {
         aRequest = false
         aDispatch = false
         aDispatchMember = null
@@ -294,175 +321,194 @@ public class OneControllerWithAllTraits : InterceptRequest, InterceptDispatch<An
         return OneContext(routingContext)
     }
 
-    public fun OneContext.get(): String {
+    fun OneContext.get(): String {
         return "Hello"
     }
 
-    public fun TwoContext.getTwo(): String {
+    fun TwoContext.getTwo(): String {
         return "Bye"
     }
 
-    public fun TwoContext.getTwoThree(): String {
+    fun TwoContext.getTwoThree(): String {
         return "dunno"
     }
 
-    public fun OneContext.getButFail500(): String {
+    fun OneContext.getButFail500(): String {
         // make an error 500
         throw RuntimeException("Drat")
     }
 
-    public fun OneContext.getButFail403(): String {
+    fun OneContext.getButFail403(): String {
         throw HttpErrorForbidden()
     }
 
-    public fun OneContext.getButFail401(): String {
+    fun OneContext.getButFail401(): String {
         throw HttpErrorUnauthorized()
     }
 
-    public fun OneContext.getButFail400(): String {
+    fun OneContext.getButFail400(): String {
         throw HttpErrorBadRequest()
     }
 
-    public fun OneContext.getButFail404(): String {
+    fun OneContext.getButFail404(): String {
         throw HttpErrorNotFound()
     }
 
-    public fun OneContext.getThatHasRedirect(): String {
+    fun OneContext.getButFail409StringBody(): String {
+        throw HttpErrorCodeWithBody("Invalid Request", 409, "String Body")
+    }
+
+    fun OneContext.getButFail409JsonBody(): String {
+        throw HttpErrorCodeWithBody("Invalid Request", 409, CustomErrorBody())
+    }
+
+    data class CustomErrorBody(val status: String = "error", val reason: String = "Not valid thingy")
+
+    fun OneContext.getThatHasRedirect(): String {
         throw HttpRedirect("/one/two")
     }
 
-    public fun OneContext.getNothingAndFail(): Unit {
+    fun OneContext.getNothingAndFail(): Unit {
         // will fail, because no return type, must redirect and doesn't
     }
 
-    public fun OneContext.getNothingAndRedirect(): Unit {
+    fun OneContext.getNothingAndRedirect(): Unit {
         throw HttpRedirect("/one/two")
     }
 
-    public fun OneContext.putReturnNothingIsOk(): Unit {
+    fun OneContext.putReturnNothingIsOk(): Unit {
 
     }
 
-    public fun OneContext.getPromiseResults(): Promise<String, Exception> {
+    fun OneContext.getPromiseResults(): Promise<String, Exception> {
         return task { "I promised, I delivered" }
     }
 
-    public fun OneContext.getPromiseError(): Promise<String, Exception> {
+    fun OneContext.getPromiseError(): Promise<String, Exception> {
         return task { throw HttpErrorForbidden() }
     }
 
-    public fun OneContext.getMissingParameter(parm1: String?, parm2: String): String {
+    fun OneContext.getMissingParameter(parm1: String?, parm2: String): String {
         return "${parm1} ${parm2}"
     }
 
-    public fun RoutingContext.getNoSpecialContext(): String {
+    data class DefaultableClass(val contents: String)
+
+    fun OneContext.getMissingDefaultable(parm1: String = "sad", parm2: String, parm3: DefaultableClass = DefaultableClass("Defaulted")): String {
+        return "${parm1} ${parm2} ${parm3.contents}"
+    }
+
+    enum class FooFoo { ONE, TWO, THREE }
+    fun OneContext.getOtherTypesIncludingNullables(parm1: Boolean?, parm2: String?, parm3: FooFoo, parm4: FooFoo?): String {
+        return "${parm1} ${parm2} ${parm3} ${parm4}"
+    }
+
+    fun RoutingContext.getNoSpecialContext(): String {
         return "success"
     }
 
 }
 
-public class ContextTestController {
-    public fun RoutingContext.getNoSpecialContext(): String {
+class ContextTestController {
+    fun RoutingContext.getNoSpecialContext(): String {
         return "success"
     }
 }
 
-public data class OneContext(private val context: RoutingContext)
-public data class TwoContext(private val context: RoutingContext)
+data class OneContext(private val context: RoutingContext)
+data class TwoContext(private val context: RoutingContext)
 
-public data class Person(val name: String, val age: Int)
-public data class RestResponse(val status: String = "OK")
+data class Person(val name: String, val age: Int)
+data class RestResponse(val status: String = "OK")
 
-@VerbAlias("find", HttpVerb.GET)
-public class JsonController {
-    public fun OneContext.listPeople(): List<Person> {
+@VerbAlias("find", HttpVerb.GET) class JsonController {
+    fun OneContext.listPeople(): List<Person> {
         return listOf(Person("Fred", 30), Person("Tom", 20))
     }
 
-    public fun OneContext.findPeopleNamedByName(name: String): List<Person> {
+    fun OneContext.findPeopleNamedByName(name: String): List<Person> {
         val people = listOf(Person("Fred", 30), Person("Tom", 20))
         val matchingPersons = people.groupBy { it.name }.map { it.key to it.value }.toMap().get(name)
         if (matchingPersons == null || matchingPersons.size == 0) throw HttpErrorNotFound()
         return matchingPersons
     }
 
-    public fun OneContext.findPeopleWithAge(age: Int): List<Person> {
+    fun OneContext.findPeopleWithAge(age: Int): List<Person> {
         val people = listOf(Person("Fred", 30), Person("Tom", 20))
         val matchingPersons = people.groupBy { it.age }.map { it.key to it.value }.toMap().get(age)
         if (matchingPersons == null || matchingPersons.size == 0) throw HttpErrorNotFound()
         return matchingPersons
     }
 
-    public fun OneContext.findPeopleNamedByNameWithAge(name: String, age: Int): List<Person> {
+    fun OneContext.findPeopleNamedByNameWithAge(name: String, age: Int): List<Person> {
         val people = listOf(Person("Fred", 30), Person("Tom", 20))
         val matchingPersons = people.groupBy { it.name }.map { it.key to it.value }.toMap().get(name)?.filter { it.age == age }
         if (matchingPersons == null || matchingPersons.size == 0) throw HttpErrorNotFound()
         return matchingPersons
     }
 
-    public fun OneContext.findPeople2_Named_ByName_Age_ByAge(name: String, age: Int): List<Person> {
+    fun OneContext.findPeople2_Named_ByName_Age_ByAge(name: String, age: Int): List<Person> {
         return findPeopleNamedByNameWithAge(name, age)
     }
 }
 
-public class ControllerWithSpecialTypes {
-    public fun OneContext.getThingByDate(date: Instant): Instant {
+class ControllerWithSpecialTypes {
+    fun OneContext.getThingByDate(date: Instant): Instant {
         return date
     }
 }
 
 
-@VerbAliases(VerbAlias("find", HttpVerb.GET), VerbAlias("search", HttpVerb.GET), VerbAlias("add", HttpVerb.PUT, 201))
-public class JsonControllerManyAliases {
-    public fun OneContext.findPeople1(): List<Person> {
+@VerbAliases(VerbAlias("find", HttpVerb.GET), VerbAlias("search", HttpVerb.GET), VerbAlias("add", HttpVerb.PUT, 201)) class JsonControllerManyAliases {
+    fun OneContext.findPeople1(): List<Person> {
         return listOf(Person("Fred", 30), Person("Tom", 20))
     }
 
-    public fun OneContext.searchPeople2(): List<Person> {
+    fun OneContext.searchPeople2(): List<Person> {
         return listOf(Person("Fred", 30), Person("Tom", 20))
     }
 
-    public fun OneContext.addPerson1(person: Person): Person {
+    fun OneContext.addPerson1(person: Person): Person {
         return person
     }
 
-    public fun OneContext.postPerson1(person: Person): Person {
+    fun OneContext.postPerson1(person: Person): Person {
         return person
     }
 
-    public fun OneContext.getPerson1(): Person {
+    fun OneContext.getPerson1(): Person {
         return Person("Fred", 30)
     }
 }
 
-public class AnnotationsInsideController {
+class AnnotationsInsideController {
     @Verb(HttpVerb.GET, skipPrefix = false)
-    public fun OneContext.whatIsThisMethod1(): RestResponse = RestResponse()
+    fun OneContext.whatIsThisMethod1(): RestResponse = RestResponse()
 
-    @Verb(HttpVerb.GET, skipPrefix = true) // already the default
-    public fun OneContext.skipWhatIsThisMethod2(): RestResponse = RestResponse()
+    @Verb(HttpVerb.GET, skipPrefix = true)
+    fun OneContext.skipWhatIsThisMethod2(): RestResponse = RestResponse()
 
     @Location("what/is/this/method3")
-    public fun OneContext.getMethod3(): RestResponse = RestResponse()
+    fun OneContext.getMethod3(): RestResponse = RestResponse()
 
     @Verb(HttpVerb.GET)
     @Location("what/is/this/method4")
-    public fun OneContext.method4(): RestResponse = RestResponse()
+    fun OneContext.method4(): RestResponse = RestResponse()
 
     @Location("what/is/this/method5/:status")
-    public fun OneContext.getMethod5(status: String): RestResponse = RestResponse(status)
+    fun OneContext.getMethod5(status: String): RestResponse = RestResponse(status)
 }
 
-public class ParameterBindingController {
-    public fun OneContext.getSomethingHavingSimpleParameters(parm1: Int, parm2: String, parm3: Boolean): String {
+class ParameterBindingController {
+    fun OneContext.getSomethingHavingSimpleParameters(parm1: Int, parm2: String, parm3: Boolean): String {
         return "$parm1, $parm2, $parm3"
     }
 
-    public fun OneContext.getSomethingHavingComplexParameter(parm1: Person): Person = parm1
+    fun OneContext.getSomethingHavingComplexParameter(parm1: Person): Person = parm1
 
-    public fun OneContext.getSomethingHavingTwoComplexParameters(parm1: Person, parm2: Person): List<Person> = listOf(parm1, parm2)
+    fun OneContext.getSomethingHavingTwoComplexParameters(parm1: Person, parm2: Person): List<Person> = listOf(parm1, parm2)
 
-    public fun OneContext.putSomethingAsJson(parm1: Person): Person = parm1
+    fun OneContext.putSomethingAsJson(parm1: Person): Person = parm1
 
-    public fun OneContext.putSomethingAsJsonAndParameters(parm1: Person, parm2: Person): List<Person> = listOf(parm2, parm1)
+    fun OneContext.putSomethingAsJsonAndParameters(parm1: Person, parm2: Person): List<Person> = listOf(parm2, parm1)
 }

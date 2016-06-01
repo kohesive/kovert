@@ -59,7 +59,8 @@ public class KovertVertx private constructor() {
 
                 val numCores = Runtime.getRuntime().availableProcessors()
 
-                val hazelcastConfig = XmlConfigBuilder().build().setGroupConfig(GroupConfig(vertxCfg.clusterName, vertxCfg.clusterPass))
+                val hazelcastConfig = HazelcastClusterManager().loadConfigFromClasspath()
+                hazelcastConfig.groupConfig.setName(vertxCfg.clusterName).setPassword(vertxCfg.clusterPass)
                 if (vertxCfg.forceLocalClusterOnly) {
                     val loopback = InetAddress.getLoopbackAddress().hostAddress
                     hazelcastConfig.networkConfig.interfaces.setInterfaces(setOf(loopback))

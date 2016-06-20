@@ -280,9 +280,19 @@ public interface TemplateEngine {
 Available template engines:
 
 * [Apache FreeMarker](http://freemarker.org/) - KovertFreemarkerTemplateEngine ([source](template-engine-freemarker/src/main/kotlin/uy/kohesive/kovert/template/freemarker/KovertFreemarkerTemplateEngine.kt), [tests](template-engine-freemarker/src/test/kotlin/uy/kohesive/kovert/template/freemarker/TestKovertFreemarkerTemplateEngine.kt))
+
+```
+compile group: 'uy.kohesive.kovert', name: 'kovert-template-engine-freemarker', version: "${versionKovert}"
+```
+
 * [Handlebars.java](https://github.com/jknack/handlebars.java) - KovertHandlebarsTemplateEngine ([source](template-engine-handlebars/src/main/kotlin/uy/kohesive/kovert/template/handlebars/KovertHandlebarsTemplateEngine.kt), [tests](template-engine-handlebars/src/test/kotlin/uy/kohesive/kovert/template/handlebars/TestKovertHandlebarsTemplateEngine.kt))
 
-It is up to you to configure the raw template system that the engine uses, including enabling/disabling caching within.
+```
+compile group: 'uy.kohesive.kovert', name: 'kovert-template-engine-handlebars', version: "${versionKovert}"
+```
+
+It is up to you to configure the raw template system that the engine uses, see the samples above for ideas.
+
 
 ### Redirects
 

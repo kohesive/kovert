@@ -10,10 +10,10 @@ import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.AbstractKovertTest
 import uy.kohesive.kovert.vertx.bindController
 
-public class TestRendering: AbstractKovertTest() {
+class TestRendering: AbstractKovertTest() {
 
     @Before
-    override public fun beforeTest() {
+    override fun beforeTest() {
         KovertConfig.registerTemplateEngine(MockViewEngine("1"), ".mock1")
         KovertConfig.registerTemplateEngine(MockViewEngine("2"), "mock2", "xhtml")
         super.beforeTest()
@@ -27,6 +27,13 @@ public class TestRendering: AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/view/test/mock/view2", assertResponse = """mocked:1 -- [test.mock1] -- Model1(name=Fred, age=33)""", assertContentType = "text/html")
 
         _client.testServer(HttpMethod.GET, "/view/test/mock/view/fail", 500)
+   }
+
+    @Test fun testAnnotatedRenderMemberWithFunction() {
+        val controller = MockController1()
+        _router.bindController(controller, "/view")
+
+        _client.testServer(HttpMethod.GET, "/view/test/mock/view/slithie", assertResponse = """mocked:1 -- [test.mock1] -- Model1(name=Slithie, age=21)""", assertContentType = "text/html")
     }
 
     @Test fun testDynamicRenderMethods() {
@@ -73,36 +80,28 @@ internal open class MockViewEngine(val id: String): TemplateEngine {
 }
 
 internal class MockController1 {
-    @Rendered("test.mock1")
-    public fun RoutingContext.getTestMockView1(): Model1 = Model1("Fred", 33)
+    @Rendered("test.mock1") fun RoutingContext.getTestMockView1(): Model1 = Model1("Fred", 33)
 
-    @Rendered("test.mock1")
-    public fun RoutingContext.getTestMockView2(): Promise<Model1, Exception> = Promise.ofSuccess(Model1("Fred", 33))
+    @Rendered("test.mock1") fun RoutingContext.getTestMockView2(): Promise<Model1, Exception> = Promise.ofSuccess(Model1("Fred", 33))
 
-    @Rendered("test.mock1")
-    public fun RoutingContext.getTestMockViewFail(): Promise<Model1, Exception> = Promise.ofFail(Exception("Failed"))
+    @Rendered("test.mock1") fun RoutingContext.getTestMockViewFail(): Promise<Model1, Exception> = Promise.ofFail(Exception("Failed"))
 
-    @Rendered
-    public fun RoutingContext.getTestReturnedMockView1(): ModelAndRenderTemplate<Model1> = ModelAndRenderTemplate(Model1("David", 20), "test.mock1")
+    @Rendered fun RoutingContext.getTestReturnedMockView1(): ModelAndRenderTemplate<Model1> = ModelAndRenderTemplate(Model1("David", 20), "test.mock1")
 
-    @Rendered
-    public fun RoutingContext.getTestReturnedMockView2(): Promise<ModelAndRenderTemplate<Model1>, Exception> = Promise.ofSuccess(ModelAndRenderTemplate(Model1("David", 20), "test.mock1"))
+    @Rendered fun RoutingContext.getTestReturnedMockView2(): Promise<ModelAndRenderTemplate<Model1>, Exception> = Promise.ofSuccess(ModelAndRenderTemplate(Model1("David", 20), "test.mock1"))
 
-    @Rendered("bad.engine")
-    public fun RoutingContext.getTestBadEngine1(): Model1 = Model1("Bad", 0)
+    @Rendered("bad.engine") fun RoutingContext.getTestBadEngine1(): Model1 = Model1("Bad", 0)
 
-    @Rendered
-    public fun RoutingContext.getTestBadEngine2(): ModelAndRenderTemplate<Model1> = ModelAndRenderTemplate(Model1("Bad", 0), "bad.engine")
+    @Rendered fun RoutingContext.getTestBadEngine2(): ModelAndRenderTemplate<Model1> = ModelAndRenderTemplate(Model1("Bad", 0), "bad.engine")
 
-    @Rendered("test.mock1", contentType = "overriden/type")
-    public fun RoutingContext.getTestMockView1AndContentTypeOverride(): Model1 = Model1("Danny", 99)
+    @Rendered("test.mock1", contentType = "overriden/type") fun RoutingContext.getTestMockView1AndContentTypeOverride(): Model1 = Model1("Danny", 99)
 
-    @Rendered("test.mock2")
-    public fun RoutingContext.getTestMockView2AndContentTypeFromEngine(): Model1 = Model1("Danny", 99)
+    @Rendered("test.mock2") fun RoutingContext.getTestMockView2AndContentTypeFromEngine(): Model1 = Model1("Danny", 99)
 
-    @Rendered("test.mock2", contentType = "overriden/type2")
-    public fun RoutingContext.getTestMockView2AndContentTypeFromEngineOverridden(): Model1 = Model1("Danny", 99)
+    @Rendered("test.mock2", contentType = "overriden/type2") fun RoutingContext.getTestMockView2AndContentTypeFromEngineOverridden(): Model1 = Model1("Danny", 99)
 
+    @Rendered("test.mock1") @Verb(HttpVerb.GET, skipPrefix = false)
+    val testMockViewSlithie = fun RoutingContext.(): Model1 = Model1("Slithie", 21)
 }
 
 internal data class Model1(val name: String, val age: Int)

@@ -7,8 +7,8 @@ import io.vertx.ext.web.RoutingContext
  * Optionally intercept a raw vert-x request, before the dispatch is known.  Must call nextHandler() if not blocking
  * this request with either an exception, or calling vert-x to end the handler.
  */
-public interface InterceptRequest : uy.kohesive.kovert.core.CoreInterceptRequest<RoutingContext> {
-    override public fun interceptRequest(rawContext: RoutingContext, nextHandler: () -> Unit)
+interface InterceptRequest : uy.kohesive.kovert.core.CoreInterceptRequest<RoutingContext> {
+    override fun interceptRequest(rawContext: RoutingContext, nextHandler: () -> Unit)
 }
 
 /**
@@ -17,8 +17,8 @@ public interface InterceptRequest : uy.kohesive.kovert.core.CoreInterceptRequest
  * throwing exceptions. And exceptions can be caught and handled from the actual dispatch call by wrapping the call
  * to nextHandler() in a try...catch.
  */
-public interface InterceptDispatch<T : Any> : uy.kohesive.kovert.core.CoreInterceptDispatch<T> {
-    override public fun T.interceptDispatch(member: Any, dispatcher: () -> Any?): Any?
+interface InterceptDispatch<T : Any> : uy.kohesive.kovert.core.CoreInterceptDispatch<T> {
+    override fun T.interceptDispatch(member: Any, dispatcher: () -> Any?): Any?
 
     fun _internal(receiver: T, targetMember: Any, dispatcher: () -> Any?): Any? {
         return receiver.interceptDispatch(targetMember, dispatcher)
@@ -30,8 +30,8 @@ public interface InterceptDispatch<T : Any> : uy.kohesive.kovert.core.CoreInterc
  * chain.  This method should call nextHandler() when done if other handlers should execute, or it should tell vert-x
  * to end the route.
  */
-public interface InterceptRequestFailure : uy.kohesive.kovert.core.CoreInterceptRequestFailure<RoutingContext> {
-    override public fun interceptFailure(rawContext: RoutingContext, nextHandler: () -> Unit)
+interface InterceptRequestFailure : uy.kohesive.kovert.core.CoreInterceptRequestFailure<RoutingContext> {
+    override fun interceptFailure(rawContext: RoutingContext, nextHandler: () -> Unit)
 }
 
 /**
@@ -39,6 +39,6 @@ public interface InterceptRequestFailure : uy.kohesive.kovert.core.CoreIntercept
  * by a function in the class.  Otherwise contexts are automatically found and constructed by their type + having a single
  * parameter constructor expecting a RoutingContext.
  */
-public interface ContextFactory<T : Any> : uy.kohesive.kovert.core.CoreContextFactory<RoutingContext, T> {
+interface ContextFactory<T : Any> : uy.kohesive.kovert.core.CoreContextFactory<RoutingContext, T> {
     override fun createContext(routingContext: RoutingContext): T
 }

@@ -5,15 +5,15 @@ import com.fasterxml.jackson.databind.type.TypeFactory
 import io.netty.handler.codec.http.HttpHeaders
 import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
+import io.vertx.ext.auth.User
 import io.vertx.ext.web.Route
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import nl.komponents.kovenant.*
 import uy.klutter.core.common.whenNotNull
 import uy.klutter.core.jdk.mustNotStartWith
 import uy.klutter.reflect.conversion.TypeConversionConfig
 import uy.klutter.reflect.full.isAssignableFrom
 import uy.klutter.reflect.unwrapInvokeException
+import uy.klutter.vertx.promiseResult
 import uy.kohesive.injekt.api.InjektScope
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.ContextFactory
@@ -30,9 +30,10 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                                                dispatchFunction: KCallable<*>,
                                                contextFactory: ContextFactory<*>,
                                                disallowVoid: Boolean, defaultSuccessStatus: Int,
-                                               rendererInfo: RendererInfo) {
+                                               rendererInfo: RendererInfo, authInfo: AuthorityInfo) {
 
     val JSON: ObjectMapper = Json.mapper
+
     route.handler { routeContext ->
         val requestContext = contextFactory.createContext(routeContext)
 

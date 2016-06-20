@@ -13,17 +13,17 @@ import kotlin.test.assertEquals
 
 data class HttpClientResult(val statusCode: Int, val statusMessage: String, val body: String?, val headers: MultiMap)
 
-public fun HttpClientRequest.promise(): Promise<HttpClientResult, Throwable> {
+fun HttpClientRequest.promise(): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     return promise({}, deferred)
 }
 
-public fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     return promise(init, deferred)
 }
 
-public fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit, deferred: Deferred<HttpClientResult, Throwable>): Promise<HttpClientResult, Throwable> {
+fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit, deferred: Deferred<HttpClientResult, Throwable>): Promise<HttpClientResult, Throwable> {
     try {
         handler { response ->
             response.bodyHandler { buff ->
@@ -40,7 +40,7 @@ public fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit, deferred:
     return deferred.promise
 }
 
-public fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     try {
         return this.request(verb, requestUri).promise(init, deferred)
@@ -51,7 +51,7 @@ public fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init:
     return deferred.promise
 }
 
-public fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     try {
         return this.requestAbs(verb, requestUri).promise(init, deferred)
@@ -62,10 +62,13 @@ public fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, in
     return deferred.promise
 }
 
-public fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, assertContentType: String? = null, writeJson: String? = null) {
+fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, assertContentType: String? = null, writeJson: String? = null, cookie: String? = null): String? {
     val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
         if (writeJson != null) {
             putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+            if (cookie != null) {
+                putHeader(HttpHeaders.COOKIE, cookie)
+            }
             setChunked(true)
             write(writeJson)
         }
@@ -78,12 +81,16 @@ public fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: I
     if (assertContentType != null) {
         assertEquals(assertContentType, result.headers.get(HttpHeaders.CONTENT_TYPE))
     }
+    return result.headers.get(HttpHeaders.SET_COOKIE)
 }
 
-public fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, writeJson: String? = null) {
+fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, writeJson: String? = null, cookie: String? = null): String? {
     val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
         if (writeJson != null) {
             putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+            if (cookie != null) {
+                putHeader(HttpHeaders.COOKIE, cookie)
+            }
             setChunked(true)
             write(writeJson)
         }
@@ -91,4 +98,5 @@ public fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, a
 
     assertEquals(assertStatus, result.statusCode, "Eror with ${verb} at ${path}")
     assertEquals(assertResponse, result.body, "Eror with ${verb} at ${path}")
+    return result.headers.get(HttpHeaders.SET_COOKIE)
 }

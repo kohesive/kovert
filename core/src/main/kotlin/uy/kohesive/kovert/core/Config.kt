@@ -5,11 +5,11 @@ import uy.klutter.core.jdk.mustStartWith
 import uy.klutter.core.jdk.nullIfBlank
 
 
-public object KovertConfig {
+object KovertConfig {
     /**
      * Default HTTP to method prefix name mathing
      */
-    public val defaultVerbAliases: MutableMap<String, PrefixAsVerbWithSuccessStatus> = hashMapOf()
+    val defaultVerbAliases: MutableMap<String, PrefixAsVerbWithSuccessStatus> = hashMapOf()
 
     init {
         addVerbAlias("get", HttpVerb.GET, 200)
@@ -26,28 +26,27 @@ public object KovertConfig {
         addVerbAlias("patch", HttpVerb.PATCH, 200)
     }
 
-    public fun addVerbAlias(prefix: String, verb: HttpVerb, successStatusCode: Int = 200): KovertConfig {
+    fun addVerbAlias(prefix: String, verb: HttpVerb, successStatusCode: Int = 200): KovertConfig {
         defaultVerbAliases.put(prefix, PrefixAsVerbWithSuccessStatus(prefix, verb, successStatusCode))
         return this
     }
 
-    public fun removeVerbAlias(prefix: String): KovertConfig {
+    fun removeVerbAlias(prefix: String): KovertConfig {
         defaultVerbAliases.remove(prefix)
         return this
     }
 
-    public @Volatile var reportStackTracesOnExceptions: Boolean = false
+    @Volatile var reportStackTracesOnExceptions: Boolean = false
 
-    @Deprecated("This setting should go away, please add your own body handler very early")
-    public val autoAddBodyHandlersOnPutPostPatch: Boolean = false
+    @Deprecated("This setting should go away, please add your own body handler very early in your route setup") val autoAddBodyHandlersOnPutPostPatch: Boolean = false
 
-    public val templateEngines = arrayListOf<RegisteredTemplateEngine>()
+    private val templateEngines = arrayListOf<RegisteredTemplateEngine>()
 
-    public fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: String, contentType: String = "text/html") {
+    fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: String, contentType: String = "text/html") {
         registerTemplateEngine(templateEngine, listOf(recognizeBySuffix), contentType)
     }
 
-    public fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: List<String>, contentType: String = "text/html") {
+    fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: List<String>, contentType: String = "text/html") {
         recognizeBySuffix.forEach {
             templateEngines.add(RegisteredTemplateEngine(it.mustStartWith('.'), contentType, templateEngine))
         }
@@ -55,7 +54,7 @@ public object KovertConfig {
         templateEngines.sortedByDescending { it.recognizeBySuffix.length }
     }
 
-    public fun engineForTemplate(template: String): RegisteredTemplateEngine {
+    fun engineForTemplate(template: String): RegisteredTemplateEngine {
         return template.nullIfBlank().whenNotNull { template ->
             KovertConfig.templateEngines.firstOrNull { template.endsWith(it.recognizeBySuffix) }
         } ?: throw Exception("Cannot find render engine for template '${template}' (see KovertConfig.registerTemplateEngine)")
@@ -64,6 +63,6 @@ public object KovertConfig {
     data class RegisteredTemplateEngine(val recognizeBySuffix: String, val contentType: String, val templateEngine: TemplateEngine)
 }
 
-public data class PrefixAsVerbWithSuccessStatus(val prefix: String, val verb: HttpVerb, val successStatusCode: Int)
+data class PrefixAsVerbWithSuccessStatus(val prefix: String, val verb: HttpVerb, val successStatusCode: Int)
 
 // look more at "Good principles of REST design" at http://stackoverflow.com/questions/1619152/how-to-create-rest-urls-without-verbs

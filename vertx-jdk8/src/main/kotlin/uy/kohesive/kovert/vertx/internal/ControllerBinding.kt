@@ -6,9 +6,13 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.ext.auth.User
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
+import nl.komponents.kovenant.all
+import nl.komponents.kovenant.any
+import nl.komponents.kovenant.deferred
 import uy.klutter.core.common.whenNotNull
 import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
@@ -19,6 +23,7 @@ import uy.klutter.reflect.full.erasedType
 import uy.klutter.reflect.full.isAssignableFrom
 import uy.klutter.reflect.unwrapInvokeException
 import uy.klutter.vertx.externalizeUrl
+import uy.klutter.vertx.promiseResult
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptRequest
@@ -136,12 +141,19 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             RendererInfo(false)
         }
 
+        val authAnnotation = callable.annotations.firstOrNull { it is Authority } as Authority?
+        val authInfo = if (authAnnotation != null) {
+            AuthorityInfo(true, authAnnotation.roles.toList(), authAnnotation.mode == AuthorityMode.ALL)
+        } else {
+            AuthorityInfo(false, emptyList(), false)
+        }
+
         if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE && callable.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
             val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
             val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
             val (verbAndStatus, subPath) = memberNameToPath(memberName, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
             if (verbAndStatus != null) {
-                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable, rendererInfo)
+                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable, rendererInfo, authInfo)
             }
         }
     }
@@ -185,7 +197,11 @@ internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to Http
 
 
 @Suppress("UNCHECKED_CAST")
-private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String, verbAndStatus: VerbWithSuccessStatus, subPath: String, member: Any, memberName: String, dispatchInstance: Any, dispatchFunction: KCallable<*>, rendererInfo: RendererInfo) {
+private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String,
+                                          verbAndStatus: VerbWithSuccessStatus, subPath: String,
+                                          member: Any, memberName: String,
+                                          dispatchInstance: Any, dispatchFunction: KCallable<*>,
+                                          rendererInfo: RendererInfo, authInfo: AuthorityInfo) {
     val receiverType = dispatchFunction.parameters.first { it.kind == KParameter.Kind.EXTENSION_RECEIVER }.type
 
     val contextFactory = if (controller is ContextFactory<*>) {
@@ -232,8 +248,35 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         router.route(finalRoutePath).method(vertxVerb).handler(BodyHandler.create().setBodyLimit(8 * 1024))
     }
 
-    val route = router.route(finalRoutePath).method(vertxVerb)
+    if (authInfo.requiresLogin || authInfo.roles.isNotEmpty()) {
+        val authRoute = router.route(finalRoutePath).method(vertxVerb)
+        authRoute.handler { routeContext ->
+            try {
+                val user: User? = routeContext.user()
+                if (user == null && (authInfo.requiresLogin || authInfo.roles.isNotEmpty())) throw HttpErrorUnauthorized()
+                if (user != null) {
+                    if (authInfo.roles.isNotEmpty()) {
+                        val promises = authInfo.roles.map {
+                            val deferred = deferred<Boolean, Exception>()
+                            user.isAuthorised(it, promiseResult(deferred))
+                            deferred.promise
+                        }
+                        val wrapper = if (authInfo.requireAll) all(promises) else any(promises)
+                        wrapper.success {
+                            routeContext.next()
+                        }.fail {
+                            routeContext.fail(HttpErrorForbidden())
+                        }
+                    }
+                }
+            } catch (rawEx: Throwable) {
+                val ex = unwrapInvokeException(rawEx)
+                routeContext.fail(ex)
+            }
+        }
+    }
 
+    val dispatchRoute = router.route(finalRoutePath).method(vertxVerb)
     val disallowVoid = verbAndStatus.verb == HttpVerb.GET
 
     val rendererMsg = if (rendererInfo.enabled) {
@@ -248,10 +291,11 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName} $rendererMsg")
 
-    setHandlerDispatchWithDataBinding(route, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode, rendererInfo)
+    setHandlerDispatchWithDataBinding(dispatchRoute, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode, rendererInfo, authInfo)
 }
 
 internal data class RendererInfo(val enabled: Boolean = false, val template: String? = null, val overrideContentType: String? = null, val engine: KovertConfig.RegisteredTemplateEngine? = null, val dynamic: Boolean = template.isNullOrBlank())
+internal data class AuthorityInfo(val requiresLogin: Boolean = false, val roles: List<String>, val requireAll: Boolean = false)
 
 internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
     val logger = LoggerFactory.getLogger(controller.javaClass)

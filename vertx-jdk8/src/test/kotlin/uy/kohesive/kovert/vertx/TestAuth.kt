@@ -53,7 +53,7 @@ class TestAuth : AbstractKovertTest() {
 
         fun login(user: MockUser, cookie: String?): String {
             val newCookie = _client.testServer(HttpMethod.POST, "/api/login/${user.apikey}",
-                    assertResponse = """{"username":"${user.username}","permissions":[${user.permissions.joinToString(",", "\"", "\"")}]}""",
+                    assertResponse = """{"username":"${user.username}","permissions":[${user.permissions.map { """"$it"""" }.joinToString(",")}]}""",
                     assertContentType = "application/json",
                     cookie = cookie)
             return newCookie ?: throw Exception("Missing cookie!")
@@ -63,17 +63,17 @@ class TestAuth : AbstractKovertTest() {
         cookie = login(authService.user1, cookie)
         _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
 
         cookie = logout(cookie)
         cookie = login(authService.user2, cookie)
         _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
 
         cookie = logout(cookie)
         cookie = login(authService.user3, cookie)
@@ -81,15 +81,15 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
 
         cookie = logout(cookie)
         cookie = login(authService.user4, cookie)
         _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 401, cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/user/data", assertStatus = 401, cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/user/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
 
         cookie = logout(cookie)
         cookie = login(authService.user5, cookie)
@@ -206,7 +206,7 @@ class MockUser constructor() : AbstractUser() {
     }
 
     override fun doIsPermitted(permission: String, resultHandler: Handler<AsyncResult<Boolean>>) {
-        resultHandler.handle(Future.succeededFuture(permission in permission))
+        resultHandler.handle(Future.succeededFuture(permission in permissions))
     }
 
     override fun setAuthProvider(authProvider: AuthProvider) {

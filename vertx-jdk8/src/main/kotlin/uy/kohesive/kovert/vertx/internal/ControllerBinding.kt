@@ -13,6 +13,7 @@ import io.vertx.ext.web.handler.BodyHandler
 import nl.komponents.kovenant.all
 import nl.komponents.kovenant.any
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.then
 import uy.klutter.core.common.whenNotNull
 import uy.klutter.core.jdk.mustEndWith
 import uy.klutter.core.jdk.mustNotEndWith
@@ -253,21 +254,44 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         authRoute.handler { routeContext ->
             try {
                 val user: User? = routeContext.user()
-                if (user == null && (authInfo.requiresLogin || authInfo.roles.isNotEmpty())) throw HttpErrorUnauthorized()
-                if (user != null) {
-                    if (authInfo.roles.isNotEmpty()) {
-                        val promises = authInfo.roles.map {
-                            val deferred = deferred<Boolean, Exception>()
-                            user.isAuthorised(it, promiseResult(deferred))
-                            deferred.promise
-                        }
-                        val wrapper = if (authInfo.requireAll) all(promises) else any(promises)
-                        wrapper.success {
+                // we code all cases so that fall through unexpectedly is a failure case,
+                // we don't want accidental success here
+                if (user == null && !authInfo.requiresLogin && authInfo.roles.isEmpty()) {
+                    // we don't have a user, but no one cares, continue
+                    routeContext.next()
+                    return@handler
+                } else if (user == null) {
+                    // all other cases need a user
+                    routeContext.fail(HttpErrorUnauthorized())
+                    return@handler
+                } else if (authInfo.requiresLogin && authInfo.roles.isEmpty()) {
+                    // we have a user and only require a login to continue
+                    routeContext.next()
+                    return@handler
+                } else if (authInfo.roles.isNotEmpty()) {
+                    val promises = authInfo.roles.map {
+                        val deferred = deferred<Boolean, Exception>()
+                        user.isAuthorised(it, promiseResult(deferred))
+                        deferred.promise
+                    }
+                    all(promises).success { results ->
+                        if (authInfo.requireAll && results.all { it == true }) {
                             routeContext.next()
-                        }.fail {
+                        } else if (!authInfo.requireAll && results.any { it == true }) {
+                            routeContext.next()
+                        } else {
+                            // unknown case, fail!
                             routeContext.fail(HttpErrorForbidden())
                         }
+                    }.fail { ex ->
+                        // unknown case, fail!
+                        routeContext.fail(HttpErrorCode("unknown", 500, ex))
                     }
+                    return@handler
+                } else {
+                    // unknown case, fail!
+                    routeContext.fail(HttpErrorCode("unknown", 500))
+                    return@handler
                 }
             } catch (rawEx: Throwable) {
                 val ex = unwrapInvokeException(rawEx)

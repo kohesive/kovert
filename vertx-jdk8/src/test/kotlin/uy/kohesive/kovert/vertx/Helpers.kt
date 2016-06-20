@@ -77,7 +77,7 @@ fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 20
 
     assertEquals(assertStatus, result.statusCode, "Error with ${verb} at ${path}, wrong status code.  expected $assertStatus, but received ${result.statusCode}")
     if (assertResponse != null) {
-        assertEquals(assertResponse, result.body, "Error with ${verb} at ${path}, wrong body response.  expected: \n$assertResponse\nbyt received:\n${result.body}")
+        assertEquals(assertResponse, result.body, "Error with ${verb} at ${path}, wrong body response.  expected: \n$assertResponse\nbut received:\n${result.body}")
     }
     if (assertContentType != null) {
         assertEquals(assertContentType, result.headers.get(HttpHeaders.CONTENT_TYPE))

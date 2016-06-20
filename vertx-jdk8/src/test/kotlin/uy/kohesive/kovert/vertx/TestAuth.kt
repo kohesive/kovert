@@ -52,10 +52,11 @@ class TestAuth : AbstractKovertTest() {
         }
 
         fun login(user: MockUser, cookie: String?): String {
-            return _client.testServer(HttpMethod.POST, "/api/login/${user.apikey}",
+            val newCookie = _client.testServer(HttpMethod.POST, "/api/login/${user.apikey}",
                     assertResponse = """{"username":"${user.username}","permissions":[${user.permissions.joinToString(",", "\"", "\"")}]}""",
                     assertContentType = "application/json",
-                    cookie = cookie) ?: throw Exception("Missing cookie!")
+                    cookie = cookie)
+            return newCookie ?: throw Exception("Missing cookie!")
         }
 
         var cookie: String? = logout(null)

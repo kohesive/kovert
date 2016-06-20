@@ -9,6 +9,7 @@ import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import uy.klutter.core.jdk.*
+import uy.klutter.core.uri.UrlEncoding
 import kotlin.test.assertEquals
 
 data class HttpClientResult(val statusCode: Int, val statusMessage: String, val body: String?, val headers: MultiMap)
@@ -64,11 +65,11 @@ fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: Htt
 
 fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, assertContentType: String? = null, writeJson: String? = null, cookie: String? = null): String? {
     val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
+        if (cookie != null) {
+            putHeader(HttpHeaders.COOKIE, cookie)
+        }
         if (writeJson != null) {
             putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-            if (cookie != null) {
-                putHeader(HttpHeaders.COOKIE, cookie)
-            }
             setChunked(true)
             write(writeJson)
         }
@@ -81,16 +82,25 @@ fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 20
     if (assertContentType != null) {
         assertEquals(assertContentType, result.headers.get(HttpHeaders.CONTENT_TYPE))
     }
-    return result.headers.get(HttpHeaders.SET_COOKIE)
+    return buildCookieHeader(cookie, result.headers.getAll(HttpHeaders.SET_COOKIE))
+}
+
+fun buildCookieHeader(oldCookie: String?, cookieSetters: List<String>): String? {
+    val newCookieMap = hashMapOf<String, String>()
+    val oldCookies = oldCookie?.split(';')?.map { it.trim() } ?: emptyList()
+    val newCookies = cookieSetters.map { it.substringBefore(';') }
+    newCookieMap.putAll(oldCookies.map { it.substringBefore('=') to UrlEncoding.decode(it.substringAfter('=')) })
+    newCookieMap.putAll(newCookies.map { it.substringBefore('=') to UrlEncoding.decode(it.substringAfter('=')) })
+    return if (newCookieMap.isEmpty()) null else newCookieMap.entries.map { it.key + "=" + UrlEncoding.encodeQueryNameOrValue(it.value) }.joinToString("; ")
 }
 
 fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, writeJson: String? = null, cookie: String? = null): String? {
     val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
+        if (cookie != null) {
+            putHeader(HttpHeaders.COOKIE, cookie)
+        }
         if (writeJson != null) {
             putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-            if (cookie != null) {
-                putHeader(HttpHeaders.COOKIE, cookie)
-            }
             setChunked(true)
             write(writeJson)
         }
@@ -98,5 +108,5 @@ fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, assertSt
 
     assertEquals(assertStatus, result.statusCode, "Eror with ${verb} at ${path}")
     assertEquals(assertResponse, result.body, "Eror with ${verb} at ${path}")
-    return result.headers.get(HttpHeaders.SET_COOKIE)
+    return buildCookieHeader(cookie, result.headers.getAll(HttpHeaders.SET_COOKIE))
 }

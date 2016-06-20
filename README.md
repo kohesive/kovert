@@ -309,7 +309,10 @@ open class HttpErrorBadRequest() : HttpErrorCode("bad request", 400)
 open class HttpErrorNotFound() : HttpErrorCode("not found", 404)
 
 open class HttpErrorCode(message: String, val code: Int = 500, causedBy: Throwable? = null)
+open class HttpErrorCodeWithBody(message: String, code: Int = 500, val body: Any, causedBy: Throwable? = null) : HttpErrorCode(message, code, causedBy)
 ```
+
+The `HttpErrorCodeWithBody` allows returning a body (String as HTML, complex object as JSON) with the error code.
 
 ### Intercepts
 

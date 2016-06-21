@@ -32,9 +32,9 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 
-public class App(val configFile: Path) {
+class App(val configFile: Path) {
     companion object {
-        @JvmStatic public fun main(args: Array<String>) {
+        @JvmStatic fun main(args: Array<String>) {
             if (args.size != 1) {
                 println("Invalid usage.  ConfigFile parameter is required!")
                 println()
@@ -76,7 +76,7 @@ public class App(val configFile: Path) {
         }
     }
 
-    public fun start() {
+    fun start() {
         // we use the pattern findSomething so add that as a alias for HTTP GET
         KovertConfig.addVerbAlias("find", HttpVerb.GET)
         KovertConfig.addVerbAlias("view", HttpVerb.GET)

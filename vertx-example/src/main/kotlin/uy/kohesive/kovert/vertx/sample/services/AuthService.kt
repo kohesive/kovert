@@ -12,8 +12,8 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.*
 
 interface AuthService  {
-    public fun apiKeyToUser(apiKey: String): User?
-    public fun userFromLogin(username: String, password: String): User?
+    fun apiKeyToUser(apiKey: String): User?
+    fun userFromLogin(username: String, password: String): User?
 }
 
 class MockAuthService: AuthService {
@@ -23,9 +23,9 @@ class MockAuthService: AuthService {
         }
     }
 
-    override public fun apiKeyToUser(apiKey: String): User? = mockData_validApiKeys.get(apiKey)
+    override fun apiKeyToUser(apiKey: String): User? = mockData_validApiKeys.get(apiKey)
 
-    override public fun userFromLogin(username: String, password: String): User? {
+    override fun userFromLogin(username: String, password: String): User? {
         // let's just let anything log in
         return mockData_validUsers.firstOrNull { it.username == username }
     }

@@ -236,7 +236,7 @@ class AdminApiController {
     fun SecuredContext.listUsers(): Promise<PageableList<User>, Exception> { ... }
 
     @Authority("resource:users:write") // requires both role:admin and resource:users:write
-    fun SecuredContext.updateUser(user: User): Promise<Unit, Exception> { ... }
+    fun SecuredContext.postUser(user: User): Promise<Unit, Exception> { ... }
 
     // requires only role:admin
     fun SecuredContext.getAdminStats(): Promise<AdminStats, Exception> { ... }

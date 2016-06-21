@@ -123,7 +123,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         return kotlin.Pair(memberVerb, memberPath)
     }
 
-    fun acceptCallable(member: Any, memberName: String, dispatchInstance: Any, callable: KCallable<*>) {
+    fun acceptCallable(controller: Any, member: Any, memberName: String, dispatchInstance: Any, callable: KCallable<*>) {
         val renderAnnotation = callable.annotations.firstOrNull { it is Rendered } as Rendered?
 
         val rendererInfo  = if (renderAnnotation != null) {
@@ -142,26 +142,19 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             RendererInfo(false)
         }
 
-        val authAnnotation = callable.annotations.firstOrNull { it is Authority } as Authority?
-        val authInfo = if (authAnnotation != null) {
-            AuthorityInfo(true, authAnnotation.roles.toList(), authAnnotation.mode == AuthorityMode.ALL)
-        } else {
-            AuthorityInfo(false, emptyList(), false)
-        }
-
         if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE && callable.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
             val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
             val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
             val (verbAndStatus, subPath) = memberNameToPath(memberName, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
             if (verbAndStatus != null) {
-                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable, rendererInfo, authInfo)
+                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable, rendererInfo)
             }
         }
     }
 
     // find extension methods that are also members
     controller.javaClass.kotlin.memberExtensionFunctions.forEach { member ->
-        acceptCallable(member, member.name, controller, member)
+        acceptCallable(controller, member, member.name, controller, member)
     }
 
     // find properties that are function references
@@ -171,7 +164,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             if (dispatchInstance != null && dispatchInstance is Function<*>) {
                 try {
                     val callable = KCallableFuncRefOrLambda.fromInstance(dispatchInstance, member.name, member.annotations)
-                    acceptCallable(member, member.name, dispatchInstance, callable)
+                    acceptCallable(controller, member, member.name, dispatchInstance, callable)
                 } catch (ex: IllegalStateException) {
                     logger.debug("Ignoring property ${member.name}, is of type Function but doesn't appear to have KFunction meta-data (Internal Kotlin thing)")
                 }
@@ -202,7 +195,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
                                           verbAndStatus: VerbWithSuccessStatus, subPath: String,
                                           member: Any, memberName: String,
                                           dispatchInstance: Any, dispatchFunction: KCallable<*>,
-                                          rendererInfo: RendererInfo, authInfo: AuthorityInfo) {
+                                          rendererInfo: RendererInfo) {
     val receiverType = dispatchFunction.parameters.first { it.kind == KParameter.Kind.EXTENSION_RECEIVER }.type
 
     val contextFactory = if (controller is ContextFactory<*>) {
@@ -249,7 +242,18 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         router.route(finalRoutePath).method(vertxVerb).handler(BodyHandler.create().setBodyLimit(8 * 1024))
     }
 
-    if (authInfo.requiresLogin || authInfo.roles.isNotEmpty()) {
+    val authForController = controller.javaClass.annotations.firstOrNull { it is Authority } as Authority?
+    val authForContext= receiverType.erasedType().annotations.firstOrNull { it is Authority } as Authority?
+    val authForDispatch = dispatchFunction.annotations.firstOrNull { it is Authority } as Authority?
+
+    listOf(authForController, authForContext, authForDispatch).map { oneAuth ->
+        if (oneAuth != null) {
+            AuthorityInfo(true, oneAuth.roles.toList(), oneAuth.mode == AuthorityMode.ALL)
+        } else {
+            AuthorityInfo(false, emptyList(), false)
+        }
+    }.filter { authInfo -> authInfo.requiresLogin || authInfo.roles.isNotEmpty() }
+     .forEach { authInfo ->
         val authRoute = router.route(finalRoutePath).method(vertxVerb)
         authRoute.handler { routeContext ->
             try {
@@ -315,7 +319,10 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName} $rendererMsg")
 
-    setHandlerDispatchWithDataBinding(dispatchRoute, logger, controller, member, dispatchInstance, dispatchFunction, contextFactory, disallowVoid, verbAndStatus.successStatusCode, rendererInfo, authInfo)
+    setHandlerDispatchWithDataBinding(dispatchRoute, logger, controller, member,
+            dispatchInstance, dispatchFunction,
+            contextFactory, disallowVoid,
+            verbAndStatus.successStatusCode, rendererInfo)
 }
 
 internal data class RendererInfo(val enabled: Boolean = false, val template: String? = null, val overrideContentType: String? = null, val engine: KovertConfig.RegisteredTemplateEngine? = null, val dynamic: Boolean = template.isNullOrBlank())

@@ -21,7 +21,7 @@ Include the dependency in your Gradle / Maven projects that are setup with Kotli
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:0.13.+"
+compile "uy.kohesive.kovert:kovert-vertx:0.14.+"
 ```
 
 **Maven:**
@@ -29,7 +29,7 @@ compile "uy.kohesive.kovert:kovert-vertx:0.13.+"
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
     <artifactId>kovert-vertx</artifactId>
-    <version>[0.13.0,0.14.0)</version>
+    <version>[0.14.0,0.15.0)</version>
 </dependency>
 ```
 
@@ -212,9 +212,44 @@ public fun RestContext.getCompaniesSearch(name: String?, country: String?): Prom
 
 When using Kovenant promises, please see the section below about Vert.x + Kovenant.
 
-### HTML Views (or rendering any text based content type)
+### Authorization
 
-**NOTE:** *NEW AS OF VERSION 0.10*
+Controllers, context classes and controller methods can be protected by a list of Authorities that must be present on
+the current user or the controller method(s) cannot be called.  These are set using the ``@Authority` annotation and
+provides one or more authorities to match with mode `ANY` or `ALL`.  If authorities are set on the controller then they
+apply to all methods fo the controller and must match along with any added directly to the context or methods.  Same
+for adding authorities to a context, it must match and any method specific authorities.
+
+Authorization handlers must be set when creating the routes to which the controllers are bound.  The authority annotations
+basically cause the `user.isAuthorised(authoriy)` method to be called for each authority specified, then combined based
+on the mode of `ANY` or `ALL`.  See the [Vert.x documentation for Authentication and Authorisation](http://vertx.io/docs/vertx-auth-common/java/)
+for more on configuration of Vert.x.
+
+An empty `@Authority()` annotation indicates soley that a valid user must be present, they must be authenticated.
+
+An example:
+
+```kotlin
+@Authority("role:admin")
+class AdminApiController {
+    @Authority("resource:users:read") // requires both role:admin and resource:users:read
+    fun SecuredContext.listUsers(): Promise<PageableList<User>, Exception> { ... }
+
+    @Authority("resource:users:write") // requires both role:admin and resource:users:write
+    fun SecuredContext.updateUser(user: User): Promise<Unit, Exception> { ... }
+
+    // requires only role:admin
+    fun SecuredContext.getAdminStats(): Promise<AdminStats, Exception> { ... }
+
+    @Authority("resource:secrets")  // requires role:admin from controller, and role:root from the context, and resource:secrets
+    fun RootContext.getSecretThing(): Promise<SuperSecret, Exception> { ... }
+}
+
+@Authority("role:root")
+class RootContext(val routingContext: RoutingContext) { ... }
+```
+
+### HTML Views (or rendering any text based content type)
 
 For rendering HTML or other rendered content you have two options:
 
@@ -326,6 +361,7 @@ You can intercept by putting another Vert.x handler before you bind the controll
 |@VerbAliases|Controller|Set a list of method perfix aliases to be used only by this controller|
 |@Location|Method|Set a specific path for a method, ignoring the method name other than for the prefix to infer the HTTP Verb.  Path parameters should be prefixed by a `:` such as `my/path/with/:param`|
 |@Verb|Method|Set the HTTP Verb and default status success code for a method, optionally skipping part of the method name when infering the path|
+|@Authority|Controller, Method, Context|Set the authorities (role, permission, etc) required for the controller, context or method.  And the mode to match ANY or ALL|
 
 If is typical to use `@Location` and `@Verb` together on a method, although they can be used individually.
 
@@ -365,7 +401,5 @@ View the [sample application](vertx-example/src/main/kotlin/uy/kohesive/kovert/v
 * Undertow support as alternative to Vert.x
 * SparkJava support as alternative to Vert.x and Undertow
 * Configurable clauses in method names for substitution patterns (i.e. "By", "In", "With" are substitution patterns)
-* View support (annotation that renders the result as a model, plus a return type of ViewAndModel for cases that may use different views from the same method)
-* With View support, people will want to ask for the HREF from a given controller method, should be able to provide that in Kotlin M13, or can provide using the `val getSomeThing = fun MyContext.(param: String): MyObject { ... }` form of declaring a controller method already since `MyClass::getSomething` can reference that value, whereas in the other form, it is not referenceable in M12.  
-* Data binding to support injekt for parameters not available in the incoming data (query, form, path, body)
+* With View support, people will want to ask for the HREF from a given controller method, should be able to provide that in Kotlin M13, or can provide using the `val getSomeThing = fun MyContext.(param: String): MyObject { ... }` form of declaring a controller method already since `MyClass::getSomething` can reference that value, whereas in the other form, it is not referenceable in M12.
 * Ignore annotation for extension methods in controller that are not desired

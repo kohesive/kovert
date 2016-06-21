@@ -40,12 +40,12 @@ class TestAuth : AbstractKovertTest() {
         val authService = MockAuthService()
         val authProvider = MockUserAuthProvider(authService)
 
-        val controller = MockAuthController(authService, authProvider)
         _router.route().handler(CookieHandler.create())
         _router.route().handler(SessionHandler.create(LocalSessionStore.create(_vertx)).setSessionTimeout(TimeUnit.HOURS.toMillis(1L)).setNagHttps(false))
 
         _router.route().handler(UserSessionHandler.create(authProvider))
-        _router.bindController(controller, "/api")
+        _router.bindController(MockAdminController(), "/admin")
+        _router.bindController(MockAuthController(authProvider), "/api")
 
         fun logout(cookie: String?): String? {
             return _client.testServer(HttpMethod.POST, "/api/logout", assertStatus = 200, cookie = cookie)
@@ -66,6 +66,10 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 403, cookie = cookie)
+
 
         cookie = logout(cookie)
         cookie = login(authService.user2, cookie)
@@ -74,6 +78,10 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 403, cookie = cookie)
+
 
         cookie = logout(cookie)
         cookie = login(authService.user3, cookie)
@@ -82,6 +90,10 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertResponse = """{"what":"someAdminStuff"}""", cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data",  assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 403, cookie = cookie)
+
 
         cookie = logout(cookie)
         cookie = login(authService.user4, cookie)
@@ -90,6 +102,10 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertStatus = 403, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 403, cookie = cookie)
+
 
         cookie = logout(cookie)
         cookie = login(authService.user5, cookie)
@@ -98,6 +114,9 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertResponse = """{"what":"someImportantData"}""", cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertResponse = """{"what":"someAdminStuff"}""", cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertResponse = """{"what":"someImportantData"}""", cookie = cookie)
 
         cookie = logout(cookie)
         // unlogged in user, no session
@@ -106,12 +125,15 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 401, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertStatus = 401, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertStatus = 401, cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 401, cookie = cookie)
 
 
     }
 }
 
-internal class MockAuthController(val authService: MockAuthService, val authProvider: MockUserAuthProvider) {
+internal class MockAuthController(val authProvider: MockUserAuthProvider) {
     fun PublicAccess.postLoginByApikey(apikey: String): Promise<JsonObject, Exception> {
         val deferred = deferred<User, Exception>()
         val newUser = authProvider.authenticate(jsonObject { put("apiKey", apikey) }, promiseResult(deferred))
@@ -153,7 +175,27 @@ internal class MockAuthController(val authService: MockAuthService, val authProv
     val someImportantData = fun UserSessionSecured.(): MockResponse {
         return MockResponse("someImportantData")
     }
+
+    // inherit the role:admin from the context
+    fun AdminSessionSecured.getSomeAdminStuff(): MockResponse {
+        return MockResponse("someAdminStuff")
+    }
 }
+
+@Authority("role:admin")
+internal class MockAdminController() {
+    fun UserSessionSecured.getSomeAdminData(): MockResponse {
+        return MockResponse("someAdminData")
+    }
+
+    @Authority("resource:importantData")
+    fun UserSessionSecured.getSomeImportantData(): MockResponse {
+        return MockResponse("someImportantData")
+    }
+
+    data class MockResponse(val what: String)
+}
+
 
 class MockAuthService {
     val user1 = MockUser("user.one", "key:one", listOf("role:viewUser"))
@@ -284,7 +326,7 @@ class PublicAccess(private val routingContext: RoutingContext) {
     fun loginUser(user: User) = routingContext.setUser(user)
 }
 
-class UserSessionSecured(private val routingContext: RoutingContext) {
+open class UserSessionSecured(private val routingContext: RoutingContext) {
     // must be logged in, if not, bad!! (the AuthHandler should already prevent getting this far)
     val user: User = routingContext.user() as? User ?: throw HttpErrorUnauthorized()
 
@@ -293,5 +335,10 @@ class UserSessionSecured(private val routingContext: RoutingContext) {
         routingContext.session().destroy()
     }
 }
+
+@Authority("role:admin")
+class AdminSessionSecured(routingContext: RoutingContext): UserSessionSecured(routingContext)
+
+
 
 

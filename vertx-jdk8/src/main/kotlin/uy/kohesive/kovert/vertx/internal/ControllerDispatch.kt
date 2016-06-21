@@ -30,7 +30,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                                                dispatchFunction: KCallable<*>,
                                                contextFactory: ContextFactory<*>,
                                                disallowVoid: Boolean, defaultSuccessStatus: Int,
-                                               rendererInfo: RendererInfo, authInfo: AuthorityInfo) {
+                                               rendererInfo: RendererInfo) {
 
     val JSON: ObjectMapper = Json.mapper
 

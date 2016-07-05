@@ -1,4 +1,14 @@
 =========================================================
+2015-07-xx v0.20.0  (in progress)
+=========================================================
+
+* version jump to 0.20.0 to signify a big change
+* Upgrade to Klutter 2.0.0
+* BREAKING CHANGE: Change Injekt to Kodein, this includes changing to the Kodein injection modules.  bind<VertxConfig>() fromConfig (it)
+* BREAKING CHANGE: Method name parsing is now Camel Case lower cased UNLESS there are underscores which splits on underscores without changing case
+
+
+=========================================================
 2015-06-20 v0.14.0
 =========================================================
 

@@ -1,43 +1,43 @@
 package uy.kohesive.kovert.vertx.boot
 
-import com.hazelcast.config.GroupConfig
-import com.hazelcast.config.XmlConfigBuilder
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.global.KodeinGlobalAware
+import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.instance
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import uy.klutter.config.typesafe.*
+import uy.klutter.config.typesafe.kodein.ConfigModule
+import uy.klutter.core.common.notExists
 import uy.klutter.core.common.verifiedBy
-import uy.klutter.core.jdk7.notExists
 import uy.klutter.vertx.WrappedThrowableException
 import uy.klutter.vertx.vertx
 import uy.klutter.vertx.vertxCluster
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.*
 import java.net.InetAddress
 import java.nio.file.Path
 import java.nio.file.Paths
 
-public object KovertVertxModule : KonfigModule, InjektModule {
-    override fun KonfigRegistrar.registerConfigurables() {
-        bindClassAtConfigRoot<VertxConfig>()
+object KodeinKovertVertx {
+    val configModule = Kodein.ConfigModule {
+        bind<VertxConfig>() fromConfig (it)
     }
 
-    override fun InjektRegistrar.registerInjectables() {
-
+    val module = Kodein.Module {
+        // other bindings
     }
 }
 
-public class KovertVertx private constructor() {
+class KovertVertx private constructor() {
     companion object {
         val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVertx::class.java)
 
         /**
          * Returns a Promise<Vertx, Exception> representing the started Vertx instance
          */
-        public fun start(vertxCfg: VertxConfig = Injekt.get(), workingDir: Path? = null, vertxOptionsInit: VertxOptions.() -> Unit = {}): Promise<Vertx, Exception> {
+        fun start(kodein: Kodein = Kodein.global, vertxCfg: VertxConfig = kodein.instance(), workingDir: Path? = null, vertxOptionsInit: VertxOptions.() -> Unit = {}): Promise<Vertx, Exception> {
             LOG.warn("Starting Vertx")
 
             val deferred = deferred<Vertx, Exception>()
@@ -59,7 +59,7 @@ public class KovertVertx private constructor() {
 
                 val numCores = Runtime.getRuntime().availableProcessors()
 
-                val hazelcastConfig = HazelcastClusterManager().loadConfigFromClasspath()
+                val hazelcastConfig = HazelcastClusterManager().loadConfig()
                 hazelcastConfig.groupConfig.setName(vertxCfg.clusterName).setPassword(vertxCfg.clusterPass)
                 if (vertxCfg.forceLocalClusterOnly) {
                     val loopback = InetAddress.getLoopbackAddress().hostAddress
@@ -73,7 +73,7 @@ public class KovertVertx private constructor() {
                         .setClustered(vertxCfg.clustered)
                         .setClusterManager(HazelcastClusterManager(hazelcastConfig))
 
-                with (vertxOptions) { vertxOptionsInit() }
+                with(vertxOptions) { vertxOptionsInit() }
 
                 val startupPromise = if (vertxOptions.isClustered()) vertxCluster(vertxOptions) else vertx(vertxOptions)
                 startupPromise success { vertx ->
@@ -93,12 +93,12 @@ public class KovertVertx private constructor() {
 }
 
 
-public data class VertxConfig(val clustered: Boolean = true,
-                              val clusterName: String,
-                              val clusterPass: String,
-                              val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
-                              val fileCaching: FileCacheConfig,
-                              val forceLocalClusterOnly: Boolean = false)
+data class VertxConfig(val clustered: Boolean = true,
+                       val clusterName: String,
+                       val clusterPass: String,
+                       val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
+                       val fileCaching: FileCacheConfig,
+                       val forceLocalClusterOnly: Boolean = false)
 
-public data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
+data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
 

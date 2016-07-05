@@ -2,7 +2,6 @@ rootProject.name = "kovert"
 
 include 'core',
         'vertx',
-        'vertx-jdk8',
         'vertx-example',
         'template-engine-freemarker',
         'template-engine-handlebars'
@@ -11,7 +10,6 @@ include 'core',
 
 project(':core').name = 'kovert-core'
 project(':vertx').name = 'kovert-vertx'
-project(':vertx-jdk8').name = 'kovert-vertx-jdk8'
 project(':vertx-example').name = 'kovert-vertx-example'
 project(':template-engine-freemarker').name = 'kovert-template-engine-freemarker'
 project(':template-engine-handlebars').name = 'kovert-template-engine-handlebars'

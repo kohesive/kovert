@@ -1,5 +1,8 @@
 package uy.kohesive.kovert.vertx.boot
 
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.instance
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
@@ -8,7 +11,6 @@ import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.net.JksOptions
 import io.vertx.ext.auth.AuthProvider
-import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.*
@@ -16,29 +18,22 @@ import io.vertx.ext.web.sstore.ClusteredSessionStore
 import io.vertx.ext.web.sstore.LocalSessionStore
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import uy.klutter.config.typesafe.KonfigModule
-import uy.klutter.config.typesafe.*
-import uy.klutter.core.common.initializedBy
-import uy.klutter.core.jdk.mustEndWith
-import uy.klutter.core.jdk.mustNotEndWith
-import uy.klutter.core.jdk.mustStartWith
-import uy.klutter.core.jdk.nullIfBlank
+import uy.klutter.config.typesafe.kodein.ConfigModule
+import uy.klutter.core.common.*
 import uy.klutter.vertx.promiseDeployVerticle
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.*
 import java.util.concurrent.TimeUnit
 
-public object KovertVerticleModule : KonfigModule, InjektModule {
-    override fun KonfigRegistrar.registerConfigurables() {
-        bindClassAtConfigRoot<KovertVerticleConfig>()
+object KovertVerticleModule {
+    val configModule = Kodein.ConfigModule {
+        bind<KovertVerticleConfig>() fromConfig (it)
     }
 
-    override fun InjektRegistrar.registerInjectables() {
-
+    val module = Kodein.Module {
+        // other bindings
     }
 }
 
-public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val customization: KovertVerticleCustomization?, val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
+class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val customization: KovertVerticleCustomization?, val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
     companion object {
         val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVerticle::class.java)
 
@@ -46,7 +41,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
          * Deploys a KovertVerticle into a Vertx instance and returns a Promise representing the deployment ID.
          * The HTTP listeners are active before the promise completes.
          */
-        public fun deploy(vertx: Vertx, cfg: KovertVerticleConfig = Injekt.get(), customization: KovertVerticleCustomization? = null, routerInit: Router.() -> Unit): Promise<String, Exception> {
+        fun deploy(vertx: Vertx, kodein: Kodein = Kodein.global, cfg: KovertVerticleConfig = kodein.instance(), customization: KovertVerticleCustomization? = null, routerInit: Router.() -> Unit): Promise<String, Exception> {
             val deferred = deferred<String, Exception>()
             val completeThePromise = fun(id: String): Unit {
                 LOG.warn("KovertVerticle is listening and ready.")
@@ -78,7 +73,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
             val appRouter = Router.router(vertx) initializedBy { router ->
                 router.route().handler(LoggerHandler.create())
 
-                fun applyHandlerToRoutePrefixes(handle: Handler<RoutingContext>, prefixes: List<String>, methods: List<HttpMethod> = emptyList())  {
+                fun applyHandlerToRoutePrefixes(handle: Handler<RoutingContext>, prefixes: List<String>, methods: List<HttpMethod> = emptyList()) {
                     if (prefixes.isEmpty()) {
                         val temp = router.route()
                         methods.forEach { temp.method(it) }
@@ -164,7 +159,7 @@ public class KovertVerticle private constructor(val cfg: KovertVerticleConfig, v
 
 internal val DEFAULT_BODY_HANDLER_LIMIT: Long = 32 * 1024
 
-public data class KovertVerticleCustomization(
+data class KovertVerticleCustomization(
         val bodyHandlerRoutePrefixes: List<String> = emptyList(),
         val bodyHandlerSizeLimit: Long = DEFAULT_BODY_HANDLER_LIMIT,
         val corsHandler: CorsHandler? = null,
@@ -177,16 +172,16 @@ public data class KovertVerticleCustomization(
     }
 }
 
-public data class KovertVerticleConfig(val listeners: List<HttpListenerConfig>,
-                                       val publicDirs: List<DirMountConfig>,
-                                       val sessionTimeoutInHours: Int) {
+data class KovertVerticleConfig(val listeners: List<HttpListenerConfig>,
+                                val publicDirs: List<DirMountConfig>,
+                                val sessionTimeoutInHours: Int) {
     fun verify(LOG: Logger) {
         // TODO: check that the right combination of parameters exist or throw exception
     }
 }
 
-public data class HttpListenerConfig(val host: String, val port: Int, val ssl: HttpSslConfig?)
-public data class HttpSslConfig(val enabled: Boolean, val keyStorePath: String?, val keyStorePassword: String?)
-public data class DirMountConfig(val mountAt: String, val dir: String)
+data class HttpListenerConfig(val host: String, val port: Int, val ssl: HttpSslConfig?)
+data class HttpSslConfig(val enabled: Boolean, val keyStorePath: String?, val keyStorePassword: String?)
+data class DirMountConfig(val mountAt: String, val dir: String)
 
 

@@ -111,7 +111,11 @@ When binding the controller class, HTTP verb and path names are derived from met
 
 So without any annotations, how does Kovert decide the path names and parameters?!?
 
-First, it camelCase parses the method name with the first part indicating the HTTP verb, and the rest being segments of the path.  When it encounters special words, it creates path parameters.  The camel case parsing rules are:
+First, if the name contains underscores it is split on each underscore maintaining case of each fragment in between.  Otherwise it camelCase parses the name lower casing each fragment.
+
+After parsing the first fragment indicates the HTTP verb, and the rest are segments of the path.  When it encounters special words, it creates path parameters.
+
+The parsing looks like:
 
 ```kotlin
 // thisIsATestOfSplitting = this is a test of splitting
@@ -121,9 +125,9 @@ First, it camelCase parses the method name with the first part indicating the HT
 // something20BySomething30 = something20 :something30
 // 20ThisAndThat = 20 this and that
 // 20thisAndThat = 20this and that
-// What_about_underscores = what about underscores
-// 20_ThisAndThat_And_What = 20 this and that and what
-// 20________thisAndThat__What = 20 this and that what
+// What_about_underscores = What about underscores
+// 20_ThisAndThat_And_What = 20 ThisAndThat And What
+// 20________thisAndThat__What = 20 thisAndThat What
 ```
 
 Using the prefix part of the method, a HTTP verb is inferred.  Obviously prefixes of "get", "put", "post", "delete", "patch" will generate a route that is for the HTTP verb of the same name.  You can see in `KovertConfig` that other aliases are defined such as "list" and "view" for HTTP GET, and "remove" also works same as HTTP DELETE.  You can change the alias list in `KovertConfig` using the `addVerbAlias` or `removeVerbAlias` methods.  You can also specify aliases in the `bindController` method as an optional parameter, or as annotations `@VerbAliases` and `@VerbAlias` on your controller class.  The sample application modifies `KovertConfig` to add "find" as an alias to HTPT GET:

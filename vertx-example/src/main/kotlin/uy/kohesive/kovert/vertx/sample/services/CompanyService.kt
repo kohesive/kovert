@@ -1,7 +1,9 @@
 package uy.kohesive.kovert.vertx.sample.services
 
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.*
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.instance
+import com.github.salomonbrys.kodein.singleton
 
 interface CompanyService {
     fun findCompanyByName(name: String): Company?
@@ -10,13 +12,13 @@ interface CompanyService {
     fun listEmployeesOfCompany(name: String): List<Person>?
 }
 
-class MockCompanyService(val peopleService: PeopleService = Injekt.get()): CompanyService {
-    companion object Injektables : InjektModule {
-        override fun InjektRegistrar.registerInjectables() {
-            addSingletonFactory<CompanyService> { MockCompanyService() }
-        }
+object KodeinCompanyService {
+    val module = Kodein.Module {
+        bind<CompanyService>() with singleton { MockCompanyService() }
     }
+}
 
+class MockCompanyService(val peopleService: PeopleService = Kodein.global.instance()): CompanyService {
     override fun findCompanyByName(name: String): Company? = mockData_companyByName.get(name.toLowerCase())
     override fun findCompaniesByCountry(country: String): List<Company> = mockData_companyByName.values.filter { it.country.equals(country, ignoreCase = true) }
     override fun upsertCompany(newCompany: Company): Unit {

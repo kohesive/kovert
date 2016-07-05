@@ -1,6 +1,7 @@
 package uy.kohesive.kovert.vertx.sample.services
 
-import uy.kohesive.injekt.api.*
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.singleton
 
 interface PeopleService {
     fun findPersonById(id: Int): Person?
@@ -11,13 +12,13 @@ interface PeopleService {
 
 data class Person(val id: Int, val name: String, val age: Int, val company: Company? = null)
 
-class MockPeopleService: PeopleService {
-    companion object Injektables: InjektModule {
-        override fun InjektRegistrar.registerInjectables() {
-            addSingletonFactory<PeopleService> { MockPeopleService() }
-        }
+object KodeinPeopleService {
+    val module = Kodein.Module {
+        bind<PeopleService>() with singleton { MockPeopleService() }
     }
+}
 
+class MockPeopleService : PeopleService {
     override fun findPersonById(id: Int): Person? = mockData_peopleById.get(id)
     override fun findPersonsByName(name: String): List<Person> = mockData_peopleById.values.filter { it.name.equals(name, ignoreCase = true) }
     override fun findPeopleByCompany(company: String): List<Person> = mockData_peopleById.values.filter { it.company?.name?.equals(company, ignoreCase = true) ?: false }

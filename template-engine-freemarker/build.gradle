@@ -1,6 +1,6 @@
 dependencies {
     compile project(":kovert-core")
     compile "org.freemarker:freemarker:$version_freemarker"
-    testCompile project(":kovert-vertx-jdk8").sourceSets.test.output
-    testCompile project(":kovert-vertx-jdk8")
+    testCompile project(":kovert-vertx").sourceSets.test.output
+    testCompile project(":kovert-vertx")
 }

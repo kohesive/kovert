@@ -8,7 +8,7 @@ import io.vertx.core.http.HttpMethod
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import uy.klutter.core.jdk.*
+import uy.klutter.core.common.mustStartWith
 import uy.klutter.core.uri.UrlEncoding
 import kotlin.test.assertEquals
 
@@ -19,12 +19,12 @@ fun HttpClientRequest.promise(): Promise<HttpClientResult, Throwable> {
     return promise({}, deferred)
 }
 
-fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClientRequest.promise(init: HttpClientRequest.() -> Unit): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     return promise(init, deferred)
 }
 
-fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit, deferred: Deferred<HttpClientResult, Throwable>): Promise<HttpClientResult, Throwable> {
+fun HttpClientRequest.promise(init: HttpClientRequest.() -> Unit, deferred: Deferred<HttpClientResult, Throwable>): Promise<HttpClientResult, Throwable> {
     try {
         handler { response ->
             response.bodyHandler { buff ->
@@ -32,32 +32,29 @@ fun HttpClientRequest.promise(init: HttpClientRequest.()->Unit, deferred: Deferr
             }
         }
         exceptionHandler { ex -> deferred.reject(ex) }
-        with (this) { init() }
+        with(this) { init() }
         end()
-    }
-    catch (ex: Exception) {
+    } catch (ex: Exception) {
         deferred.reject(ex)
     }
     return deferred.promise
 }
 
-fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpClientRequest.() -> Unit): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     try {
         return this.request(verb, requestUri).promise(init, deferred)
-    }
-    catch (ex: Throwable) {
+    } catch (ex: Throwable) {
         deferred.reject(ex)
     }
     return deferred.promise
 }
 
-fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: HttpClientRequest.()->Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: HttpClientRequest.() -> Unit): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     try {
         return this.requestAbs(verb, requestUri).promise(init, deferred)
-    }
-    catch (ex: Throwable) {
+    } catch (ex: Throwable) {
         deferred.reject(ex)
     }
     return deferred.promise

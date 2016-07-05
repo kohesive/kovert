@@ -4,7 +4,7 @@ import freemarker.template.Configuration
 import uy.kohesive.kovert.core.TemplateEngine
 import java.io.StringWriter
 
-public class KovertFreemarkerTemplateEngine(val freemarker: Configuration) : TemplateEngine {
+class KovertFreemarkerTemplateEngine(val freemarker: Configuration) : TemplateEngine {
     override fun render(template: String, model: Any): String {
         val compiledTemplate = freemarker.getTemplate(template)
         StringWriter().use { writer ->

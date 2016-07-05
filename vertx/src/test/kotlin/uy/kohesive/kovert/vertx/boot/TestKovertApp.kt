@@ -1,6 +1,6 @@
 package uy.kohesive.kovert.vertx.boot.test
 
-import com.typesafe.config.Config
+import com.github.salomonbrys.kodein.*
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.http.HttpMethod
@@ -10,16 +10,13 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
 import org.junit.Test
-import uy.klutter.config.typesafe.KonfigAndInjektMain
-import uy.klutter.config.typesafe.KonfigModule
-import uy.klutter.config.typesafe.*
-import uy.klutter.config.typesafe.jdk7.FileConfig
+import uy.klutter.config.typesafe.PathConfig
+import uy.klutter.config.typesafe.kodein.ConfigModule
+import uy.klutter.config.typesafe.kodein.importConfig
 import uy.klutter.config.typesafe.loadConfig
-import uy.klutter.vertx.VertxInjektables
+import uy.klutter.vertx.kodein.KodeinVertx
 import uy.klutter.vertx.promiseClose
 import uy.klutter.vertx.promiseUndeploy
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.*
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 import uy.kohesive.kovert.core.HttpVerb
@@ -34,11 +31,17 @@ import java.util.*
 
 
 class TestKovertApp {
-    @Test public fun testApp() {
-        val testConf = Paths.get(this.javaClass.getClassLoader().getResource("test.conf").toURI())
-        val deployment = KovertApp(testConf).start().get()
+    @Test fun testApp() {
+        val testConf: Path = Paths.get(this.javaClass.getClassLoader().getResource("test.conf").toURI())!!
+        val kodein = Kodein {
+            bind<Path>("CONFIGFILE") with singleton { testConf }
+            import(KovertApp.makeKodeinModule(testConf))
+        }
+        println("KODEIN BINDINGS:\n${kodein.container.bindings.description}")
+
+        val deployment = KovertApp(kodein).start().get()
         try {
-            val client = deployment.vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(Injekt.get<KovertVerticleConfig>().listeners.first().port))
+            val client = deployment.vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(kodein.instance<KovertVerticleConfig>().listeners.first().port))
 
             val frankJson = """{"id":1,"name":"Frank","age":30}"""
             client.testServer(HttpMethod.GET, "api/person/1", assertResponse = frankJson)
@@ -64,46 +67,38 @@ class TestKovertApp {
     }
 }
 
-public class KovertApp(val configFile: Path) {
-    // load injektions main this way, because we need to depend on a member varaible "configFile" that must be initialized beforehand
-    val injektions = object : KonfigAndInjektMain() {
-        override fun configFactory(): Config {
-            return loadConfig(FileConfig(configFile))
-        }
+class KovertApp(override val kodein: Kodein): KodeinAware {
+    companion object {
+        fun makeKodeinModule(configFile: Path) = Kodein.Module {
+            importConfig(loadConfig(PathConfig(configFile))) {
+                import("kovert.vertx", KodeinKovertVertx.configModule)
+                import("kovert.server", KovertVerticleModule.configModule)
+                import("companyData", CompanyService.configModule)
+            }
 
-        override fun KonfigRegistrar.registerConfigurables() {
-            // configuration for launching vertx
-            importModule("kovert.vertx", KovertVertxModule)
-            // configuration for kovert as a verticle
-            importModule("kovert.server", KovertVerticleModule)
-            // our controller services
-            importModule("companyData", CompanyService.Companion)
-        }
-
-        override fun InjektRegistrar.registerInjectables() {
             // includes jackson ObjectMapper to match compatibility with Vertx, app logging via Vertx facade to Slf4j
-            importModule(VertxInjektables)
-            // everything Kovert wants
-            importModule(KovertVertxModule)
-            importModule(KovertVerticleModule)
-            // our controllers like services
-            importModule(PeopleService.Companion)
-            importModule(CompanyService.Companion)
+            import(KodeinVertx.moduleWithLoggingToSlf4j)
+            // Kovert boot
+            import(KodeinKovertVertx.module)
+            import(KovertVerticleModule.module)
+            // Our custom services
+            import(PeopleService.kodeinModule)
+            import(CompanyService.kodeinModule)
         }
     }
-
-    public fun start(): Promise<VertxDeployment, Exception> {
+    fun start(): Promise<VertxDeployment, Exception> {
         KovertConfig.addVerbAlias("find", HttpVerb.GET)
 
         val initControllers = fun Router.(): Unit {
-            bindController(PeopleController(), "/api/person")
-            bindController(CompanyController(), "/api/company")
+            bindController(PeopleController(instance()), "/api/person")
+            bindController(CompanyController(instance()), "/api/company")
             bindController(RootController(), "/")
         }
 
         val deferred = deferred<VertxDeployment, Exception>()
-        KovertVertx.start(workingDir = configFile.getParent()) bind { vertx ->
-            KovertVerticle.deploy(vertx, routerInit = initControllers) success { deployId ->
+        val configFile: Path = kodein.instance("CONFIGFILE")
+        KovertVertx.start(kodein, workingDir = configFile.parent) bind { vertx ->
+            KovertVerticle.deploy(vertx, kodein, routerInit = initControllers) success { deployId ->
                 deferred.resolve(VertxDeployment(vertx, deployId))
             }
         } fail { error ->
@@ -117,30 +112,30 @@ public class KovertApp(val configFile: Path) {
 
 data class VertxDeployment(val vertx: Vertx, val deploymentId: String)
 
-class PeopleController(val peopleService: PeopleService = Injekt.get()) {
-    public fun RestContext.getById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
-    public fun RestContext.findWithId(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
-    public fun RestContext.findWithName(name: String): List<Person> {
+class PeopleController(val peopleService: PeopleService) {
+    fun RestContext.getById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
+    fun RestContext.findWithId(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
+    fun RestContext.findWithName(name: String): List<Person> {
         val found = peopleService.findPersonsByName(name)
         if (found.isEmpty()) throw HttpErrorNotFound()
         return found
     }
 
-    public fun RestContext.putById(id: Int, person: Person): StandardizedResponse {
+    fun RestContext.putById(id: Int, person: Person): StandardizedResponse {
         if (id != person.id) throw HttpErrorBadRequest()
         peopleService.writePerson(person); return StandardizedResponse()
     }
 }
 
-class CompanyController(val companyService: CompanyService = Injekt.get()) : InterceptDispatch<RestContext> {
+class CompanyController(val companyService: CompanyService) : InterceptDispatch<RestContext> {
     override fun RestContext.interceptDispatch(member: Any, dispatcher: () -> Any?): Any? {
         // don't do this type of response, REST calls should have status in header, not body
         return StandardizedResponse(data = dispatcher())
     }
 
-    public fun RestContext.getByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
-    public fun RestContext.findWithName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
-    public fun RestContext.findWithCountry(country: String): List<Company> {
+    fun RestContext.getByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    fun RestContext.findWithName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    fun RestContext.findWithCountry(country: String): List<Company> {
         val found = companyService.findCompaniesByCountry(country)
         if (found.isEmpty()) throw HttpErrorNotFound()
         return found
@@ -148,7 +143,7 @@ class CompanyController(val companyService: CompanyService = Injekt.get()) : Int
 }
 
 class RootController() {
-    public fun RestContext.getSomethingFunky(): String = "\"Funky\""
+    fun RestContext.getSomethingFunky(): String = "\"Funky\""
 }
 
 class RestContext(private val routingContext: RoutingContext)
@@ -156,9 +151,9 @@ class RestContext(private val routingContext: RoutingContext)
 data class StandardizedResponse(val status: String = "OK", val data: Any? = null)
 
 class PeopleService {
-    companion object : InjektModule {
-        override fun InjektRegistrar.registerInjectables() {
-            addSingleton(PeopleService())
+    companion object {
+        val kodeinModule = Kodein.Module {
+            bind<PeopleService>() with singleton { PeopleService() }
         }
     }
 
@@ -169,26 +164,27 @@ class PeopleService {
             Person(4, "Lucia", 31)
     ).associateByTo(HashMap()) { it.id }
 
-    public fun findPersonById(id: Int): Person? = people.get(id)
-    public fun findPersonsByName(name: String): List<Person> = people.values.filter { it.name.equals(name, ignoreCase = true) }
-    public fun writePerson(newPerson: Person): Unit {
+    fun findPersonById(id: Int): Person? = people.get(id)
+    fun findPersonsByName(name: String): List<Person> = people.values.filter { it.name.equals(name, ignoreCase = true) }
+    fun writePerson(newPerson: Person): Unit {
         people.put(newPerson.id, newPerson)
     }
 }
 
-class CompanyService(val companyData: CompanyConfig = Injekt.get(), val employees: PeopleService = Injekt.get()) {
-    companion object : KonfigModule, InjektModule {
-        override fun KonfigRegistrar.registerConfigurables() {
-            bindClassAtConfigRoot<CompanyConfig>()
+class CompanyService(val companyData: CompanyConfig, val employees: PeopleService) {
+    companion object {
+        val configModule = Kodein.ConfigModule {
+            bind<CompanyConfig>() fromConfig(it)
         }
 
-        override fun InjektRegistrar.registerInjectables() {
-            addSingleton(CompanyService())
+
+        val kodeinModule = Kodein.Module {
+            bind<CompanyService>() with singleton { CompanyService(instance(), instance()) }
         }
     }
 
-    public fun findCompanyByName(name: String): Company? = companyData.defaultCompanies.firstOrNull { it.name.equals(name, ignoreCase = true) }
-    public fun findCompaniesByCountry(country: String): List<Company> = companyData.defaultCompanies.filter { it.country.equals(country, ignoreCase = true) }
+    fun findCompanyByName(name: String): Company? = companyData.defaultCompanies.firstOrNull { it.name.equals(name, ignoreCase = true) }
+    fun findCompaniesByCountry(country: String): List<Company> = companyData.defaultCompanies.filter { it.country.equals(country, ignoreCase = true) }
 }
 
 data class CompanyConfig(val defaultCompanies: List<Company>)

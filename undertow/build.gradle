@@ -1,3 +1,5 @@
 dependencies {
-    runtime project(":kovert-undertow-jdk7")
+    compile project(":kovert-core")
+
+    compile "io.undertow:undertow-core:$version_undertow"
 }

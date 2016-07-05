@@ -1,9 +1,8 @@
 package uy.kohesive.kovert.core
 
+import uy.klutter.core.common.mustStartWith
+import uy.klutter.core.common.nullIfBlank
 import uy.klutter.core.common.whenNotNull
-import uy.klutter.core.jdk.mustStartWith
-import uy.klutter.core.jdk.nullIfBlank
-
 
 object KovertConfig {
     /**

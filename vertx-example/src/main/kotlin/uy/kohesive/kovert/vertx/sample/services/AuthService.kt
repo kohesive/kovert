@@ -1,5 +1,9 @@
 package uy.kohesive.kovert.vertx.sample.services
 
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.instance
+import com.github.salomonbrys.kodein.singleton
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
@@ -8,21 +12,19 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.auth.AbstractUser
 import io.vertx.ext.auth.AuthProvider
 import uy.klutter.vertx.json.jsonObject
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.*
 
-interface AuthService  {
+interface AuthService {
     fun apiKeyToUser(apiKey: String): User?
     fun userFromLogin(username: String, password: String): User?
 }
 
-class MockAuthService: AuthService {
-    companion object Injektables: InjektModule {
-        override fun InjektRegistrar.registerInjectables() {
-            addSingletonFactory<AuthService> { MockAuthService() }
-        }
+object KodeinAuthService {
+    val module = Kodein.Module {
+        bind<AuthService>() with singleton { MockAuthService() }
     }
+}
 
+class MockAuthService : AuthService {
     override fun apiKeyToUser(apiKey: String): User? = mockData_validApiKeys.get(apiKey)
 
     override fun userFromLogin(username: String, password: String): User? {
@@ -32,7 +34,7 @@ class MockAuthService: AuthService {
 }
 
 // simply auth provider for Vertx using our auth service, see: http://vertx.io/docs/vertx-auth-common/java/
-class SimpleUserAuthProvider(val authService: AuthService = Injekt.get()): AuthProvider {
+class SimpleUserAuthProvider(val authService: AuthService = Kodein.global.instance()) : AuthProvider {
     override fun authenticate(authInfo: JsonObject, resultHandler: Handler<AsyncResult<io.vertx.ext.auth.User>>) {
         val username = authInfo.getString("username")
         val password = authInfo.getString("password")
@@ -52,10 +54,10 @@ class SimpleUserAuthProvider(val authService: AuthService = Injekt.get()): AuthP
 }
 
 // somewhat mockedout user class that works with cluster serialization in Vert.x
-class User constructor () : AbstractUser() {
+class User constructor() : AbstractUser() {
     lateinit var username: String
 
-    constructor (username: String): this() {
+    constructor (username: String) : this() {
         this.username = username
     }
 

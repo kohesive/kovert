@@ -91,7 +91,7 @@ class TestAuth : AbstractKovertTest() {
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertResponse = """{"what":"someAdminStuff"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/admin/some/admin/data",  assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
+        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
         _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 403, cookie = cookie)
 
 
@@ -337,7 +337,7 @@ open class UserSessionSecured(private val routingContext: RoutingContext) {
 }
 
 @Authority("role:admin")
-class AdminSessionSecured(routingContext: RoutingContext): UserSessionSecured(routingContext)
+class AdminSessionSecured(routingContext: RoutingContext) : UserSessionSecured(routingContext)
 
 
 

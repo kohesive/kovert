@@ -13,10 +13,10 @@ import uy.kohesive.kovert.vertx.AbstractKovertTest
 import uy.kohesive.kovert.vertx.bindController
 import uy.kohesive.kovert.vertx.test.testServer
 
-public class TestKovertHandlebarsTemplateEngine : AbstractKovertTest() {
+class TestKovertHandlebarsTemplateEngine : AbstractKovertTest() {
 
     @Before
-    override public fun beforeTest() {
+    override fun beforeTest() {
         val loader = ClassPathTemplateLoader()
         loader.setPrefix("/templates")
         val handlebars = Handlebars(loader)
@@ -24,7 +24,7 @@ public class TestKovertHandlebarsTemplateEngine : AbstractKovertTest() {
         super.beforeTest()
     }
 
-    @Test public fun testHandlebars() {
+    @Test fun testHandlebars() {
         val controller = RenderController()
         _router.bindController(controller, "/app")
 

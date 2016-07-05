@@ -2,23 +2,19 @@ package uy.kohesive.kovert.vertx.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.type.TypeFactory
+import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpHeaders
 import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
-import io.vertx.ext.auth.User
 import io.vertx.ext.web.Route
-import nl.komponents.kovenant.*
-import uy.klutter.core.common.whenNotNull
-import uy.klutter.core.jdk.mustNotStartWith
-import uy.klutter.reflect.conversion.TypeConversionConfig
-import uy.klutter.reflect.full.isAssignableFrom
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.task
+import uy.klutter.core.common.mustNotStartWith
+import uy.klutter.reflect.isAssignableFrom
 import uy.klutter.reflect.unwrapInvokeException
-import uy.klutter.vertx.promiseResult
-import uy.kohesive.injekt.api.InjektScope
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptDispatch
-import java.lang.reflect.Type
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaType
@@ -58,8 +54,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     val missing = request.params().contains(param.name).not()
                     if (missing && param.isOptional) {
                         // this is ok, optional parameter not resolved will have default value
-                    }
-                    else {
+                    } else {
                         val parmVal = request.getParam(param.name)
                         if ((missing || parmVal == null) && !param.isOptional && !param.type.isMarkedNullable) {
                             throw HttpErrorCode("Expected parameter ${param.name} for non optional and non nullable parameter, but parameter is missing for [$dispatchFunction]", 400)
@@ -95,8 +90,8 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                         useValueForParm(param, temp)
                     } else if (usedBodyJsonAlready) {
                         throw HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters for [$dispatchFunction]")
-                    } else if (routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE) != "application/json" &&
-                            !routeContext.request().getHeader(HttpHeaders.Names.CONTENT_TYPE).startsWith("application/json;")) {
+                    } else if (routeContext.request().getHeader(HttpHeaderNames.CONTENT_TYPE) != "application/json" &&
+                            !routeContext.request().getHeader(HttpHeaderNames.CONTENT_TYPE).startsWith("application/json;")) {
                         throw HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters for [$dispatchFunction]")
                     } else {
                         try {
@@ -120,7 +115,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
             if (routeContext.response().getStatusCode() == 200) {
                 routeContext.response().setStatusCode(defaultSuccessStatus)
             }
-            routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(result)
+            routeContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType).end(result)
         }
 
         fun sendResponse(result: Any?) {
@@ -128,7 +123,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 routeContext.fail(RuntimeException("Failure after invocation of route function:  A route without a return type must redirect. for [$dispatchFunction]"))
                 return
             } else if (dispatchFunction.returnType.isAssignableFrom(String::class) || result is String) {
-                val contentType = routeContext.response().headers().get(HttpHeaders.Names.CONTENT_TYPE)
+                val contentType = routeContext.response().headers().get(HttpHeaderNames.CONTENT_TYPE)
                         ?: routeContext.getAcceptableContentType()
                         //  ?: producesContentType.nullIfBlank()
                         ?: "text/html"
@@ -149,9 +144,9 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 }
                 val contentType = routeContext.getAcceptableContentType() ?: /* producesContentType.nullIfBlank() ?: */ "application/json"
                 if (result is Void || result is Unit || result is Nothing) {
-                    routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end()
+                    routeContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType).end()
                 } else {
-                    routeContext.response().putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
+                    routeContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
                 }
             }
         }
@@ -160,7 +155,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
             if (rendererInfo.enabled) {
                 val (engine, template, model) = if (rendererInfo.dynamic) {
                     if (result is ModelAndTemplateRendering<*>) {
-                       Triple(KovertConfig.engineForTemplate(result.template), result.template, result.model)
+                        Triple(KovertConfig.engineForTemplate(result.template), result.template, result.model)
                     } else {
                         throw Exception("The method with dynamic rendering did not return a ModelAndRenderTemplate for [$dispatchFunction]")
                     }

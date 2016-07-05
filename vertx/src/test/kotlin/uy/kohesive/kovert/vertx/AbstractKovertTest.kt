@@ -7,7 +7,6 @@ import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.Json
-import io.vertx.ext.unit.TestContext
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 import org.junit.After
@@ -25,7 +24,7 @@ abstract class AbstractKovertTest {
     protected val _serverPort: Int = 18080
 
     @Before
-    open public fun beforeTest() {
+    open fun beforeTest() {
         KovertConfig.reportStackTracesOnExceptions = false
         Json.mapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
         Json.mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
@@ -44,7 +43,7 @@ abstract class AbstractKovertTest {
     }
 
     @After
-    open public fun afterTest() {
+    open fun afterTest() {
         KovertConfig.reportStackTracesOnExceptions = false
 
         _client.close()

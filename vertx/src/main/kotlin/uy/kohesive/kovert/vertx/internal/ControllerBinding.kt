@@ -1,6 +1,7 @@
 package uy.kohesive.kovert.vertx.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpHeaders
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.Json
@@ -11,17 +12,15 @@ import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
 import nl.komponents.kovenant.all
-import nl.komponents.kovenant.any
 import nl.komponents.kovenant.deferred
-import nl.komponents.kovenant.then
-import uy.klutter.core.common.whenNotNull
-import uy.klutter.core.jdk.mustEndWith
-import uy.klutter.core.jdk.mustNotEndWith
-import uy.klutter.core.jdk.mustStartWith
-import uy.klutter.core.jdk.nullIfBlank
-import uy.klutter.reflect.full.KCallableFuncRefOrLambda
-import uy.klutter.reflect.full.erasedType
-import uy.klutter.reflect.full.isAssignableFrom
+import uy.klutter.core.common.mustEndWith
+import uy.klutter.core.common.mustNotEndWith
+import uy.klutter.core.common.mustStartWith
+import uy.klutter.core.common.nullIfBlank
+import uy.klutter.core.parsing.splitOnCamelCase
+import uy.klutter.reflect.KCallableFuncRefOrLambda
+import uy.klutter.reflect.erasedType
+import uy.klutter.reflect.isAssignableFrom
 import uy.klutter.reflect.unwrapInvokeException
 import uy.klutter.vertx.externalizeUrl
 import uy.klutter.vertx.promiseResult
@@ -88,45 +87,43 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
             verbAliases).associateBy({ it.prefix }, { it })
 
-    fun memberNameToPath(name: String, knownVerb: VerbWithSuccessStatus?, knownLocation: String?, skipPrefix: Boolean): Pair<VerbWithSuccessStatus?, String> {
-        // split camel cases, with underscores also acting as split point then ignored
+    fun memberNameToPath(name: String, knownVerb: VerbWithSuccessStatus?, knownLocation: String?, skipPrefix: Boolean): Triple<VerbWithSuccessStatus?, String, Set<String>> {
+        // split camel case with everything lowered case in the end, unless there are underscores then split literally with no case changing
         // Convert things that are proceeded by "by" to a variable ":variable"  (ByAge = /:age/)
         // Convert things that are proceeded by "with" to a path element + following variable (WithName = /name/:name/)
-        //
-        // thisIsATestOfSplitting = this is a test of splitting
-        // AndWhatAboutThis = and what about this
-        // aURIIsPresent = a uri is present
-        // SomethingBySomething = something :something
-        // something20BySomething30 = something20 :something30
-        // 20ThisAndThat = 20 this and that
-        // 20thisAndThat = 20this and that
-        // What_about_underscores = what about underscores
-        // 20_ThisAndThat_And_What = 20 this and that and what
-        // 20________thisAndThat__What = 20 this and that what
-        //
-        val parts = name.split("""(?<=[a-z]|[0-9])(?=[A-Z])|(?<=[A-Z]|[0-9])(?=[A-Z][a-z])|(?<=[^\_])(?=[\_]+)|(?<=[\_])(?=[^\_])""".toRegex())
-                .filterNot { it.isNullOrBlank() }
-                .map { it.trim().toLowerCase() }
-                .filterNot { it.trim().all { it == '_' } }
+        val parts = if (name.contains('_')) {
+            name.split('_')
+        } else {
+            name.splitOnCamelCase()
+        }.filter { it.isNotEmpty() }
+
+        val pathParms = hashSetOf<String>()
         val memberVerb = knownVerb ?: prefixToVerbMap.get(parts.first().toLowerCase())?.toVerbStatus()
         val skipCount = if (knownVerb == null || skipPrefix) 1 else 0
+
+        // TODO: change this to process by iterating the segments instead of regex replace
+
         val memberPath = knownLocation ?: parts.drop(skipCount).joinToString("/").replace("""((^|[\/])(?:by|in)\/)((?:[\w])+)""".toRegex(), { match ->
             // by/something = :something
-            match.groups.get(2)!!.value + ":" + match.groups.get(3)!!.value
+            val parmName = match.groups.get(3)!!.value
+            pathParms.add(parmName)
+            match.groups.get(2)!!.value + ":" + parmName
         }).replace("""((^|[\/])with\/)((?:[\w])+)""".toRegex(), { match ->
             // with/something = something/:something
-            match.groups.get(2)!!.value + match.groups.get(3)!!.value + "/:" + match.groups.get(3)!!.value
+            val parmName = match.groups.get(3)!!.value
+            pathParms.add(parmName)
+            match.groups.get(2)!!.value + match.groups.get(3)!!.value + "/:" + parmName
         })
         if (memberVerb == null) {
             logger.error("Member $name is invalid, no HTTP Verb and the prefix ${parts.first()} does not match an HTTP verb alias, ignoring this member")
         }
-        return kotlin.Pair(memberVerb, memberPath)
+        return kotlin.Triple(memberVerb, memberPath, pathParms)
     }
 
     fun acceptCallable(controller: Any, member: Any, memberName: String, dispatchInstance: Any, callable: KCallable<*>) {
         val renderAnnotation = callable.annotations.firstOrNull { it is Rendered } as Rendered?
 
-        val rendererInfo  = if (renderAnnotation != null) {
+        val rendererInfo = if (renderAnnotation != null) {
             val engine = if (renderAnnotation.template.isNullOrBlank()) {
                 null
             } else {
@@ -243,7 +240,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     }
 
     val authForController = controller.javaClass.annotations.firstOrNull { it is Authority } as Authority?
-    val authForContext= receiverType.erasedType().annotations.firstOrNull { it is Authority } as Authority?
+    val authForContext = receiverType.erasedType().annotations.firstOrNull { it is Authority } as Authority?
     val authForDispatch = dispatchFunction.annotations.firstOrNull { it is Authority } as Authority?
 
     listOf(authForController, authForContext, authForDispatch).map { oneAuth ->
@@ -253,56 +250,56 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             AuthorityInfo(false, emptyList(), false)
         }
     }.filter { authInfo -> authInfo.requiresLogin || authInfo.roles.isNotEmpty() }
-     .forEach { authInfo ->
-        val authRoute = router.route(finalRoutePath).method(vertxVerb)
-        authRoute.handler { routeContext ->
-            try {
-                val user: User? = routeContext.user()
-                // we code all cases so that fall through unexpectedly is a failure case,
-                // we don't want accidental success here
-                if (user == null && !authInfo.requiresLogin && authInfo.roles.isEmpty()) {
-                    // we don't have a user, but no one cares, continue
-                    routeContext.next()
-                    return@handler
-                } else if (user == null) {
-                    // all other cases need a user
-                    routeContext.fail(HttpErrorUnauthorized())
-                    return@handler
-                } else if (authInfo.requiresLogin && authInfo.roles.isEmpty()) {
-                    // we have a user and only require a login to continue
-                    routeContext.next()
-                    return@handler
-                } else if (authInfo.roles.isNotEmpty()) {
-                    val promises = authInfo.roles.map {
-                        val deferred = deferred<Boolean, Exception>()
-                        user.isAuthorised(it, promiseResult(deferred))
-                        deferred.promise
-                    }
-                    all(promises).success { results ->
-                        if (authInfo.requireAll && results.all { it == true }) {
+            .forEach { authInfo ->
+                val authRoute = router.route(finalRoutePath).method(vertxVerb)
+                authRoute.handler { routeContext ->
+                    try {
+                        val user: User? = routeContext.user()
+                        // we code all cases so that fall through unexpectedly is a failure case,
+                        // we don't want accidental success here
+                        if (user == null && !authInfo.requiresLogin && authInfo.roles.isEmpty()) {
+                            // we don't have a user, but no one cares, continue
                             routeContext.next()
-                        } else if (!authInfo.requireAll && results.any { it == true }) {
+                            return@handler
+                        } else if (user == null) {
+                            // all other cases need a user
+                            routeContext.fail(HttpErrorUnauthorized())
+                            return@handler
+                        } else if (authInfo.requiresLogin && authInfo.roles.isEmpty()) {
+                            // we have a user and only require a login to continue
                             routeContext.next()
+                            return@handler
+                        } else if (authInfo.roles.isNotEmpty()) {
+                            val promises = authInfo.roles.map {
+                                val deferred = deferred<Boolean, Exception>()
+                                user.isAuthorised(it, promiseResult(deferred))
+                                deferred.promise
+                            }
+                            all(promises).success { results ->
+                                if (authInfo.requireAll && results.all { it == true }) {
+                                    routeContext.next()
+                                } else if (!authInfo.requireAll && results.any { it == true }) {
+                                    routeContext.next()
+                                } else {
+                                    // unknown case, fail!
+                                    routeContext.fail(HttpErrorForbidden())
+                                }
+                            }.fail { ex ->
+                                // unknown case, fail!
+                                routeContext.fail(HttpErrorCode("unknown", 500, ex))
+                            }
+                            return@handler
                         } else {
                             // unknown case, fail!
-                            routeContext.fail(HttpErrorForbidden())
+                            routeContext.fail(HttpErrorCode("unknown", 500))
+                            return@handler
                         }
-                    }.fail { ex ->
-                        // unknown case, fail!
-                        routeContext.fail(HttpErrorCode("unknown", 500, ex))
+                    } catch (rawEx: Throwable) {
+                        val ex = unwrapInvokeException(rawEx)
+                        routeContext.fail(ex)
                     }
-                    return@handler
-                } else {
-                    // unknown case, fail!
-                    routeContext.fail(HttpErrorCode("unknown", 500))
-                    return@handler
                 }
-            } catch (rawEx: Throwable) {
-                val ex = unwrapInvokeException(rawEx)
-                routeContext.fail(ex)
             }
-        }
-    }
 
     val dispatchRoute = router.route(finalRoutePath).method(vertxVerb)
     val disallowVoid = verbAndStatus.verb == HttpVerb.GET
@@ -348,7 +345,7 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
                 context.response()
                         .setStatusCode(ex.code)
                         .setStatusMessage("Error ${ex.code}")
-                        .putHeader(HttpHeaders.Names.CONTENT_TYPE, "text/html")
+                        .putHeader(HttpHeaderNames.CONTENT_TYPE, "text/html")
                         .end(ex.body as String)
             } else {
                 val contentType = "application/json"
@@ -356,14 +353,14 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
                     context.response()
                             .setStatusCode(ex.code)
                             .setStatusMessage("Error ${ex.code}")
-                            .putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType)
+                            .putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
                             .end()
                 } else {
                     val JSON: ObjectMapper = Json.mapper
                     context.response()
                             .setStatusCode(ex.code)
                             .setStatusMessage("Error ${ex.code}")
-                            .putHeader(HttpHeaders.Names.CONTENT_TYPE, contentType)
+                            .putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
                             .end(JSON.writeValueAsString(ex.body))
                 }
             }

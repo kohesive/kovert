@@ -1,6 +1,5 @@
 package uy.kohesive.kovert.vertx.sample.web
 
-import uy.kohesive.kovert.core.HttpRedirect
 import uy.kohesive.kovert.core.Rendered
 import uy.kohesive.kovert.vertx.sample.services.User
 
@@ -13,6 +12,6 @@ class AppWebController {
 }
 
 open class BaseAppModel(val user: User, val commonLinks: BaseLinks)
-open class BaseLinks (
+open class BaseLinks(
         val logout: String = "/logout"  // TODO: use a reference to get the logout link
 )

@@ -2,7 +2,6 @@ package uy.kohesive.kovert.vertx.sample.web
 
 import uy.kohesive.kovert.core.HttpRedirect
 import uy.kohesive.kovert.core.Rendered
-import uy.kohesive.kovert.vertx.sample.services.User
 
 class PublicWebController {
     @Rendered("login.html.ftl")
@@ -21,11 +20,9 @@ class PublicWebController {
     val doLogout = fun PublicAccess.(): String {
         try {
             if (user != null) upgradeToSecured().logout()
-        }
-        catch (ex: Throwable) {
+        } catch (ex: Throwable) {
             // eat exceptions during logout, why let it fail?!?
-        }
-        finally {
+        } finally {
             throw HttpRedirect("/login") // TODO: change to use a reference lookup to the public web controller login page
         }
     }

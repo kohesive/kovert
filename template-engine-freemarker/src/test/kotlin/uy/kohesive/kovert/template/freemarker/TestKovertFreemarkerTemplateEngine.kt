@@ -13,15 +13,15 @@ import uy.kohesive.kovert.vertx.AbstractKovertTest
 import uy.kohesive.kovert.vertx.bindController
 import uy.kohesive.kovert.vertx.test.testServer
 
-public class TestKovertFreemarkerTemplateEngine : AbstractKovertTest() {
+class TestKovertFreemarkerTemplateEngine : AbstractKovertTest() {
 
     @Before
-    override public fun beforeTest() {
+    override fun beforeTest() {
         KovertConfig.registerTemplateEngine(KovertFreemarkerTemplateEngine(FreeMarker.engine), ".html.ftl", "text/html")
         super.beforeTest()
     }
 
-    @Test public fun testFreemarker() {
+    @Test fun testFreemarker() {
         val controller = RenderController()
         _router.bindController(controller, "/app")
 

@@ -1,3 +1,20 @@
 dependencies {
-    runtime project(":kovert-vertx-jdk8")
+    compile project(":kovert-core")
+
+    compile "uy.kohesive.klutter:klutter-core:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-config-typesafe:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-config-typesafe-kodein:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-json-jackson-kodein:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-reflect:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-vertx3:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-vertx3-kodein:$version_klutter"
+
+    compile "com.github.salomonbrys.kodein:kodein:$version_kodein"
+    compile "com.github.salomonbrys.kodein:kodein-global:$version_kodein"
+
+    compile "io.vertx:vertx-core:$version_vertx"
+    compile "io.vertx:vertx-web:$version_vertx"
+    compile "io.vertx:vertx-hazelcast:$version_vertx"
+
+    testCompile "io.vertx:vertx-unit:$version_vertx"
 }

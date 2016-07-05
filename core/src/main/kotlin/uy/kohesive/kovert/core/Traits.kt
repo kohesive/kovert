@@ -5,8 +5,8 @@ package uy.kohesive.kovert.core
  * Optionally intercept a raw request, before the dispatch is known.  Must call nextHandler() if not blocking
  * this request with either an exception, or ending the handler chain (platform specific).
  */
-public interface CoreInterceptRequest<T> {
-    public fun interceptRequest(rawContext: T, nextHandler: ()->Unit)
+interface CoreInterceptRequest<T> {
+    fun interceptRequest(rawContext: T, nextHandler: ()->Unit)
 }
 
 /**
@@ -15,8 +15,8 @@ public interface CoreInterceptRequest<T> {
  * throwing exceptions. And exceptions can be caught and handled from the actual dispatch call by wrapping the call
  * to nextHandler() in a try...catch.
  */
-public interface CoreInterceptDispatch<T: Any> {
-    public fun T.interceptDispatch(member: Any, dispatcher: ()->Any?): Any?
+interface CoreInterceptDispatch<T: Any> {
+    fun T.interceptDispatch(member: Any, dispatcher: ()->Any?): Any?
 }
 
 /**
@@ -24,8 +24,8 @@ public interface CoreInterceptDispatch<T: Any> {
  * chain.  This method should call nextHandler() when done if other handlers should execute, or it should tell the
  * system (platform specific) to end the route.
  */
-public interface CoreInterceptRequestFailure<T> {
-    public fun interceptFailure(rawContext: T, nextHandler: ()->Unit)
+interface CoreInterceptRequestFailure<T> {
+    fun interceptFailure(rawContext: T, nextHandler: ()->Unit)
 }
 
 /**
@@ -33,7 +33,7 @@ public interface CoreInterceptRequestFailure<T> {
  * by a function in the class.  Otherwise contexts are automatically found and constructed by their type + having a single
  * parameter constructor expecting a platform specific context.
  */
-public interface CoreContextFactory<T, V : Any> {
+interface CoreContextFactory<T, V : Any> {
     fun createContext(routingContext: T): V
 }
 

@@ -1,6 +1,70 @@
+import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.MigrationInfo
+import org.flywaydb.core.api.callback.BaseFlywayCallback
+import java.sql.Connection
+
+apply plugin: "application"
+
+mainClassName = "uy.kohesive.kovert.vertx.sample.App"
+applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
+
 dependencies {
     compile project(":kovert-vertx")
     compile project(":kovert-template-engine-freemarker")
-    runtime "ch.qos.logback:logback-classic:$version_logback"
-    runtime "ch.qos.logback:logback-access:$version_logback"
+
+    compile "com.h2database:h2:1.4.191"
+    compile "org.flywaydb:flyway-core:4.0"
+
+    runtime "ch.qos.logback:logback-classic:1.1.5"
+    runtime "ch.qos.logback:logback-access:1.1.5"
 }
+
+/* Inherited from the root, but in case people want to know...
+buildScript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.h2database:h2:1.4.191"
+        classpath "org.flywaydb:flyway-core:4.0"
+    }
+}
+*/
+
+task migratedb << {
+    def ds = new org.h2.jdbcx.JdbcDataSource()
+    def driver = "org.h2.Driver"
+    ds.setUrl("jdbc:h2:file:./temp/kovert_example_db;DATABASE_TO_UPPER=false;MODE=MySQL") // ;INIT=CREATE SCHEMA IF NOT EXISTS appdata\\;SET SCHEMA appdata")
+
+    def holdMemoryDb = ds.getConnection()
+    holdMemoryDb.addShutdownHook {
+        println("SHUTDOWN HOOK: closing migration db")
+        holdMemoryDb.close()
+    }
+
+    try {
+        def migrations = new Flyway()
+
+        def migrateLocation = "filesystem:$projectDir/src/test/resources/db/migration"
+        println("migrations from: $migrateLocation")
+
+        migrations.setLocations(migrateLocation)
+        migrations.setDataSource(ds)
+    //    migrations.setSchemas("kovert_example_db")
+        migrations.clean()
+        migrations.setCallbacks(new BaseFlywayCallback() {
+            @Override
+            void beforeEachMigrate(Connection connection, MigrationInfo info) {
+                println("migrating: ${info.version} ${info.description}")
+            }
+        })
+        migrations.migrate()
+    }
+    finally {
+        println("closing migration db")
+        holdMemoryDb.close()
+    }
+}
+
+build.dependsOn(migratedb)

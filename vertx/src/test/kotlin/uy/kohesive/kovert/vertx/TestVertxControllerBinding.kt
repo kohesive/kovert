@@ -8,7 +8,7 @@ import nl.komponents.kovenant.task
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
-import uy.klutter.core.jdk8.utcNow
+import uy.klutter.core.common.utcNow
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.*
 import java.time.Instant
@@ -447,8 +447,8 @@ data class RestResponse(val status: String = "OK")
         return matchingPersons
     }
 
-    fun OneContext.findPeople2_Named_ByName_Age_ByAge(name: String, age: Int): List<Person> {
-        return findPeopleNamedByNameWithAge(name, age)
+    fun OneContext.find_people2_named_by_personName_with_age(personName: String, age: Int): List<Person> {
+        return findPeopleNamedByNameWithAge(personName, age)
     }
 }
 

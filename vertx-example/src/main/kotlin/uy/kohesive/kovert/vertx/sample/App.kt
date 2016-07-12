@@ -4,7 +4,8 @@ import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.global.KodeinGlobalAware
 import com.github.salomonbrys.kodein.global.global
 import com.github.salomonbrys.kodein.instance
-import com.github.salomonbrys.kodein.instanceForClass
+import com.github.salomonbrys.kodein.lazyKodein
+import com.github.salomonbrys.kodein.withClass
 import freemarker.cache.TemplateNameFormat
 import freemarker.template.Configuration
 import io.vertx.ext.web.Router
@@ -49,7 +50,7 @@ class App(val configFile: Path) : KodeinGlobalAware {
         }
     }
 
-    val LOG: Logger = instanceForClass()
+    val LOG: Logger = withClass().instance()
 
     fun start() {
         // injection starting point, including configuration loading and delegating to other modules

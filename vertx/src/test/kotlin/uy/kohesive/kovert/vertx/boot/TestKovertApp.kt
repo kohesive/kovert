@@ -34,7 +34,7 @@ class TestKovertApp {
     @Test fun testApp() {
         val testConf: Path = Paths.get(this.javaClass.getClassLoader().getResource("test.conf").toURI())!!
         val kodein = Kodein {
-            bind<Path>("CONFIGFILE") with singleton { testConf }
+            constant("CONFIGFILE") with testConf
             import(KovertApp.makeKodeinModule(testConf))
         }
         println("KODEIN BINDINGS:\n${kodein.container.bindings.description}")

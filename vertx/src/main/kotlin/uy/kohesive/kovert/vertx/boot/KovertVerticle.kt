@@ -22,6 +22,7 @@ import uy.klutter.config.typesafe.kodein.ConfigModule
 import uy.klutter.core.common.*
 import uy.klutter.vertx.promiseDeployVerticle
 import java.util.concurrent.TimeUnit
+import javax.swing.text.html.Option
 
 object KovertVerticleModule {
     val configModule = Kodein.ConfigModule {
@@ -33,7 +34,7 @@ object KovertVerticleModule {
     }
 }
 
-class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val customization: KovertVerticleCustomization?, val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
+class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val customization: KovertVerticleCustomization = KovertVerticleCustomization(), val routerInit: Router.() -> Unit, val onListenerReady: (String) -> Unit) : AbstractVerticle() {
     companion object {
         val LOG: Logger = io.vertx.core.logging.LoggerFactory.getLogger(KovertVerticle::class.java)
 
@@ -41,7 +42,7 @@ class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val cust
          * Deploys a KovertVerticle into a Vertx instance and returns a Promise representing the deployment ID.
          * The HTTP listeners are active before the promise completes.
          */
-        fun deploy(vertx: Vertx, kodein: Kodein = Kodein.global, cfg: KovertVerticleConfig = kodein.instance(), customization: KovertVerticleCustomization? = null, routerInit: Router.() -> Unit): Promise<String, Exception> {
+        fun deploy(vertx: Vertx, kodein: Kodein = Kodein.global, cfg: KovertVerticleConfig = kodein.instance(), customization: KovertVerticleCustomization = KovertVerticleCustomization(), routerInit: Router.() -> Unit): Promise<String, Exception> {
             val deferred = deferred<String, Exception>()
             val completeThePromise = fun(id: String): Unit {
                 LOG.warn("KovertVerticle is listening and ready.")
@@ -61,58 +62,58 @@ class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val cust
     override fun start() {
         LOG.warn("API Verticle starting")
         cfg.verify(LOG)
-        customization?.verify(LOG)
+        customization.verify(LOG)
 
-        val cookieHandler = CookieHandler.create()
-        fun cookieHandlerFactory() = cookieHandler
+        val cookieHandler = customization.cookieHandler ?: CookieHandler.create()
 
         val sessionStore = if (vertx.isClustered()) ClusteredSessionStore.create(vertx) else LocalSessionStore.create(vertx)
         val sessionHandler = SessionHandler.create(sessionStore).setSessionTimeout(TimeUnit.HOURS.toMillis(cfg.sessionTimeoutInHours.toLong())).setNagHttps(false)
 
+        val loggerHandler = customization.loggingHandler ?: LoggerHandler.create()
+
         try {
             val appRouter = Router.router(vertx) initializedBy { router ->
-                router.route().handler(LoggerHandler.create())
-
-                fun applyHandlerToRoutePrefixes(handle: Handler<RoutingContext>, prefixes: List<String>, methods: List<HttpMethod> = emptyList()) {
-                    if (prefixes.isEmpty()) {
-                        val temp = router.route()
-                        methods.forEach { temp.method(it) }
-                        temp.handler(handle)
-                    } else {
-                        prefixes.forEach {
-                            val temp = router.route(it.mustStartWith('/').mustEndWith("/*"))
-                            methods.forEach { temp.method(it) }
-                            temp.handler(handle)
+                fun applyHandlerToRoutePrefixes(handle: Handler<RoutingContext>, routePrefixes: OptionalHandlerRoutePrefixes, methods: List<HttpMethod> = emptyList()) {
+                    val temp = when (routePrefixes) {
+                        is OptionalHandlerRoutePrefixes.InstallOnAllRoutes -> {
+                            listOf(router.route())
+                        }
+                        is OptionalHandlerRoutePrefixes.InstallOnSpecificRoutes -> {
+                            routePrefixes.prefixes.map { router.route(it.mustStartWith('/').mustEndWith("/*")) }
                         }
                     }
+                    temp.forEach { route -> methods.forEach { method -> route.method(method) } }
                 }
 
+                applyHandlerToRoutePrefixes(loggerHandler, customization.loggingHandlerRoutePrefixes)
+
                 // setup CORS early, so that it prevents other code from running that shouldn't on CORS preflight checks
-                if (customization != null && customization.corsHandler != null) {
+                if (customization.corsHandler != null) {
                     applyHandlerToRoutePrefixes(customization.corsHandler, customization.corsHandlerRoutePrefixes)
                 }
 
                 // body handle needs to be very early, or there is a chance the body is received before it is setup to consume it
-                val bodyHandler = BodyHandler.create().setBodyLimit(customization?.bodyHandlerSizeLimit ?: DEFAULT_BODY_HANDLER_LIMIT)
-                applyHandlerToRoutePrefixes(bodyHandler, customization?.bodyHandlerRoutePrefixes ?: emptyList(),
+                val bodyHandler = customization.bodyHandler ?: BodyHandler.create().setBodyLimit(customization?.bodyHandlerSizeLimit ?: DEFAULT_BODY_HANDLER_LIMIT)
+                applyHandlerToRoutePrefixes(bodyHandler, customization.bodyHandlerRoutePrefixes,
                         listOf(HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE, HttpMethod.PATCH))
 
                 // TODO: we shouldn't waste effort put cookies on API routes
-                router.route().handler(cookieHandlerFactory())
+                applyHandlerToRoutePrefixes(cookieHandler, customization.cookieHandlerRoutePrefixes)
                 // TODO: same for session handling, we are creating a new session for each API call (because most callers drop cookies on the floor)
-                router.route().method(HttpMethod.GET).method(HttpMethod.PUT).method(HttpMethod.POST).method(HttpMethod.DELETE).method(HttpMethod.PATCH).handler(sessionHandler)
+                applyHandlerToRoutePrefixes(sessionHandler, customization.sessionHandlerRoutePrefixes,
+                        listOf(HttpMethod.GET, HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE, HttpMethod.PATCH))
 
                 // TODO: which of the auth providers should be in the API routes, vs. Web + public
 
                 // authentication
-                if (customization != null && customization.authProvider != null) {
+                if (customization.authProvider != null) {
                     val userSessionHandler = UserSessionHandler.create(customization.authProvider)
-                    applyHandlerToRoutePrefixes(userSessionHandler, emptyList(),
+                    applyHandlerToRoutePrefixes(userSessionHandler, customization.authHandlerRoutePrefixes,
                             listOf(HttpMethod.GET, HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE, HttpMethod.PATCH))
                 }
 
                 // auth handler (checks login, if not does something)
-                if (customization != null && customization.authHandler != null) {
+                if (customization.authHandler != null) {
                     applyHandlerToRoutePrefixes(customization.authHandler, customization.authHandlerRoutePrefixes)
                 }
 
@@ -159,14 +160,31 @@ class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val cust
 
 internal val DEFAULT_BODY_HANDLER_LIMIT: Long = 32 * 1024
 
+sealed class OptionalHandlerRoutePrefixes {
+    class InstallOnAllRoutes(): OptionalHandlerRoutePrefixes()
+    open class InstallOnSpecificRoutes(val prefixes: List<String>): OptionalHandlerRoutePrefixes()
+    class InstallOnNoRoutes(): InstallOnSpecificRoutes(emptyList())
+
+    companion object {
+        fun none() = InstallOnNoRoutes()
+        fun all() = InstallOnAllRoutes()
+        fun prefixedBy(prefixes: List<String>) = InstallOnSpecificRoutes(prefixes)
+    }
+}
 data class KovertVerticleCustomization(
-        val bodyHandlerRoutePrefixes: List<String> = emptyList(),
+        val cookieHandler: CookieHandler? = null,
+        val cookieHandlerRoutePrefixes: OptionalHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.all(),
+        val sessionHandlerRoutePrefixes: OptionalHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.all(),
+        val bodyHandler: BodyHandler? = null,
+        val bodyHandlerRoutePrefixes: OptionalHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.all(),
         val bodyHandlerSizeLimit: Long = DEFAULT_BODY_HANDLER_LIMIT,
         val corsHandler: CorsHandler? = null,
-        val corsHandlerRoutePrefixes: List<String> = emptyList(),
+        val corsHandlerRoutePrefixes: OptionalHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.all(),
         val authProvider: AuthProvider? = null,
         val authHandler: AuthHandler? = null,
-        val authHandlerRoutePrefixes: List<String> = emptyList()) {
+        val authHandlerRoutePrefixes: OptionalHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.all(),
+        val loggingHandler: Handler<RoutingContext>? = null,
+        val loggingHandlerRoutePrefixes: OptionalHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.all()) {
     fun verify(LOG: Logger) {
         // TODO: check that the right combination of parameters exist or throw exception
     }

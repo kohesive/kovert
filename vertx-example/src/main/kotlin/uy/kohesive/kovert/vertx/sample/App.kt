@@ -119,10 +119,10 @@ class App(val configFile: Path) : KodeinGlobalAware {
         val bodyHandlersFor = listOf(apiMountPoint, publicMountPoint, privateMountPoint)
 
         val appCustomization = KovertVerticleCustomization(
-                bodyHandlerRoutePrefixes = if (bodyHandlersFor.any { it.isBlank() }) emptyList() else bodyHandlersFor,
+                bodyHandlerRoutePrefixes = if (bodyHandlersFor.any { it.isBlank() }) OptionalHandlerRoutePrefixes.all() else OptionalHandlerRoutePrefixes.prefixedBy(bodyHandlersFor),
                 authProvider = authentication,
                 authHandler = BasicAuthHandler.create(authentication),
-                authHandlerRoutePrefixes = listOf(privateMountPoint)
+                authHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.prefixedBy(listOf(privateMountPoint))
         )
 
         // startup asynchronously...

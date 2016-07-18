@@ -83,6 +83,7 @@ class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val cust
                         }
                     }
                     temp.forEach { route -> methods.forEach { method -> route.method(method) } }
+                    temp.forEach { route -> route.handler(handle) }
                 }
 
                 applyHandlerToRoutePrefixes(loggerHandler, customization.loggingHandlerRoutePrefixes)

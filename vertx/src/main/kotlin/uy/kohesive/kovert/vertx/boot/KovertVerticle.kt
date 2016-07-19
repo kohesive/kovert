@@ -136,7 +136,7 @@ class KovertVerticle private constructor(val cfg: KovertVerticleConfig, val cust
             }
 
             cfg.listeners.forEach { listenCfg ->
-                val httpOptions = HttpServerOptions()
+                val httpOptions = HttpServerOptions().setCompressionSupported(true)
                 val scheme = if (listenCfg.ssl != null && listenCfg.ssl.enabled) {
                     httpOptions.setSsl(true).setKeyStoreOptions(JksOptions()
                             .setPath(listenCfg.ssl.keyStorePath!!)

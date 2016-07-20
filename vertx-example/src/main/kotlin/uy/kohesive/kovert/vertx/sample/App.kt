@@ -4,7 +4,6 @@ import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.global.KodeinGlobalAware
 import com.github.salomonbrys.kodein.global.global
 import com.github.salomonbrys.kodein.instance
-import com.github.salomonbrys.kodein.lazyKodein
 import com.github.salomonbrys.kodein.withClass
 import freemarker.cache.TemplateNameFormat
 import freemarker.template.Configuration

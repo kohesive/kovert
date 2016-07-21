@@ -1,8 +1,8 @@
 package uy.kohesive.kovert.vertx.sample
 
 import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.global.KodeinGlobalAware
-import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.conf.KodeinGlobalAware
+import com.github.salomonbrys.kodein.conf.global
 import com.github.salomonbrys.kodein.instance
 import com.github.salomonbrys.kodein.withClass
 import freemarker.cache.TemplateNameFormat

@@ -1,7 +1,7 @@
 package uy.kohesive.kovert.vertx.sample.api
 
 import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.conf.global
 import com.github.salomonbrys.kodein.instance
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task

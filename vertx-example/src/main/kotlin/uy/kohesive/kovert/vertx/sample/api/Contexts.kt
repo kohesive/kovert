@@ -1,6 +1,6 @@
 package uy.kohesive.kovert.vertx.sample.api
 
-import com.github.salomonbrys.kodein.global.KodeinGlobalAware
+import com.github.salomonbrys.kodein.conf.KodeinGlobalAware
 import com.github.salomonbrys.kodein.instance
 import io.vertx.core.http.HttpHeaders
 import io.vertx.ext.web.RoutingContext

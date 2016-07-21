@@ -1,8 +1,7 @@
 package uy.kohesive.kovert.vertx.boot
 
 import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.global.KodeinGlobalAware
-import com.github.salomonbrys.kodein.global.global
+import com.github.salomonbrys.kodein.conf.global
 import com.github.salomonbrys.kodein.instance
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions

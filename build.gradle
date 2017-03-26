@@ -8,17 +8,9 @@ buildscript {
         maven {
             url 'http://repo.spring.io/plugins-release'
         }
-        maven {
-            url 'http://oss.sonatype.org/content/repositories/snapshots'
-        }
-        maven {
-            url 'http://dl.bintray.com/kotlin/kotlin-eap'
-        }
     }
     //noinspection GroovyAssignabilityCheck
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$version_kotlin"
-        classpath "org.springframework.build.gradle:propdeps-plugin:0.0.7"
         classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
         // one day... classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.1-SNAPSHOT"
@@ -27,12 +19,15 @@ buildscript {
     }
 }
 
+plugins {
+    id 'nebula.kotlin' version '1.1.1' apply false
+}
+
 subprojects {
-    apply plugin: 'propdeps'
-    apply plugin: 'propdeps-maven'
-    apply plugin: 'propdeps-idea'
+    apply plugin: 'maven'
+    apply plugin: 'idea'
     apply plugin: 'java'
-    apply plugin: 'kotlin'
+    apply plugin: 'nebula.kotlin'
 
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -62,26 +57,18 @@ subprojects {
     repositories {
         mavenCentral()
         maven {
-            url 'http://oss.sonatype.org/content/repositories/snapshots'
-        }
-        maven {
-            url 'http://dl.bintray.com/kotlin/kotlin-eap'
-        }
-        maven {
             url 'http://dl.bintray.com/jaysonminard/kohesive'
-        }
-        maven {
-            url 'http://dl.bintray.com/mplatvoet/komponents'
         }
     }
 
     dependencies {
-        compile "org.jetbrains.kotlin:kotlin-stdlib:$version_kotlin"
-        compile "org.jetbrains.kotlin:kotlin-reflect:$version_kotlin"
+        compile "org.jetbrains.kotlin:kotlin-stdlib"
+        compile "org.jetbrains.kotlin:kotlin-reflect"
         compile "org.slf4j:slf4j-api:$version_slf4j"
 
         testCompile "junit:junit:$version_junit"
         testCompile "org.jetbrains.kotlin:kotlin-test:$version_kotlin"
+        testCompile "org.jetbrains.kotlin:kotlin-test-junit:$version_kotlin"
 
         testRuntime "ch.qos.logback:logback-classic:$version_logback"
     }

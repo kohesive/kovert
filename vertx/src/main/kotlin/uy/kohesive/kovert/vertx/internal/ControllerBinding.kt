@@ -32,6 +32,7 @@ import java.lang.reflect.Constructor
 import kotlin.reflect.*
 import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaType
+import kotlin.reflect.jvm.reflect
 
 
 /**
@@ -160,6 +161,7 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             val dispatchInstance = member.get(controller)
             if (dispatchInstance != null && dispatchInstance is Function<*>) {
                 try {
+                    (dispatchInstance as Function<*>).reflect()
                     val callable = KCallableFuncRefOrLambda.fromInstance(dispatchInstance, member.name, member.annotations)
                     acceptCallable(controller, member, member.name, dispatchInstance, callable)
                 } catch (ex: IllegalStateException) {

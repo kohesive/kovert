@@ -21,7 +21,7 @@ Include the dependency in your Gradle / Maven projects that are setup with Kotli
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:1.0.+"
+compile "uy.kohesive.kovert:kovert-vertx:1.1.+"
 ```
 
 **Maven:**
@@ -29,7 +29,7 @@ compile "uy.kohesive.kovert:kovert-vertx:1.0.+"
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
     <artifactId>kovert-vertx</artifactId>
-    <version>[1.0.0,1.1.0)</version>
+    <version>[1.1.0,1.2.0)</version>
 </dependency>
 ```
 

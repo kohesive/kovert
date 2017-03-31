@@ -32,6 +32,21 @@ subprojects {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
+    compileKotlin {
+        kotlinOptions {
+            jvmTarget = 1.8
+            languageVersion = 1.1
+        }
+    }
+
+    compileTestKotlin {
+        kotlinOptions {
+            jvmTarget = 1.8
+            languageVersion = 1.1
+        }
+    }
+
+
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
         options.incremental = true

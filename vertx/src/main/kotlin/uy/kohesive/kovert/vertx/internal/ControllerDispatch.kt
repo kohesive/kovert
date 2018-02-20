@@ -9,15 +9,18 @@ import io.vertx.core.logging.Logger
 import io.vertx.ext.web.Route
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
+import uy.klutter.conversion.TypeConversionConfig
 import uy.klutter.core.common.mustNotStartWith
 import uy.klutter.reflect.isAssignableFrom
 import uy.klutter.reflect.unwrapInvokeException
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptDispatch
+import java.lang.reflect.Type
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaType
+import kotlin.reflect.jvm.jvmErasure
 
 
 @Suppress("UNCHECKED_CAST")
@@ -62,8 +65,9 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
 
                         if (parmVal != null) {
                             try {
-                                // TODO: change to use type converters: TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass as Type, param.type.javaType, parmVal)
-                                val temp: Any = JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                                val temp: Any = TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass, param.type.jvmErasure.java, parmVal)
+
+                                //val temp: Any = JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
                                 useValueForParm(param, temp)
                             } catch (ex: Exception) {
                                 throw RuntimeException("Data binding failed due to: ${ex.message} for [$dispatchFunction]")
@@ -86,7 +90,9 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     if (!hasPrefixParams && (!hasBodyJson || usedBodyJsonAlready) && param.isOptional) {
                         // this is ok, optional parameter not resolved will have default value
                     } else if (hasPrefixParams) {
-                        val temp: Any = JSON.convertValue<Any>(tempMap, TypeFactory.defaultInstance().constructType(param.type.javaType))
+                       //  TODO: later but for each property: val temp: Any = TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass, param.type.jvmErasure.java, parmVal)
+
+                        val temp: Any = JSON.convertValue<Any>(tempMap, TypeFactory.defaultInstance().constructType(param.type.jvmErasure.java))
                         useValueForParm(param, temp)
                     } else if (usedBodyJsonAlready) {
                         throw HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters for [$dispatchFunction]")
@@ -96,7 +102,7 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     } else {
                         try {
                             usedBodyJsonAlready = true
-                            val temp: Any = JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.javaType))
+                            val temp: Any = JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.jvmErasure.java))
                             useValueForParm(param, temp)
                         } catch (ex: Throwable) {
                             throw HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.message}  for [$dispatchFunction]", causedBy = ex)
@@ -119,10 +125,12 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         }
 
         fun sendResponse(result: Any?) {
-            if (disallowVoid && dispatchFunction.returnType.javaType.typeName == "void") {
+            if (disallowVoid
+                && (dispatchFunction.returnType.jvmErasure.simpleName == "void"
+                        || dispatchFunction.returnType.jvmErasure.simpleName == "Unit")) {
                 routeContext.fail(RuntimeException("Failure after invocation of route function:  A route without a return type must redirect. for [$dispatchFunction]"))
                 return
-            } else if (dispatchFunction.returnType.isAssignableFrom(String::class) || result is String) {
+            } else if (dispatchFunction.returnType.jvmErasure.isAssignableFrom(String::class) || result is String) {
                 val contentType = routeContext.response().headers().get(HttpHeaderNames.CONTENT_TYPE)
                         ?: routeContext.getAcceptableContentType()
                         //  ?: producesContentType.nullIfBlank()

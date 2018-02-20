@@ -20,7 +20,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.kotlin' version '1.1.2' apply false
+    id 'nebula.kotlin' version '1.2.21' apply false
     id 'nebula.maven-resolved-dependencies' version '4.9.1' apply false
 }
 
@@ -37,14 +37,14 @@ subprojects {
     compileKotlin {
         kotlinOptions {
             jvmTarget = 1.8
-            languageVersion = 1.1
+            languageVersion = 1.2
         }
     }
 
     compileTestKotlin {
         kotlinOptions {
             jvmTarget = 1.8
-            languageVersion = 1.1
+            languageVersion = 1.2
         }
     }
 

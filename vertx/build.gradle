@@ -8,6 +8,7 @@ dependencies {
     compile "uy.kohesive.klutter:klutter-reflect:$version_klutter"
     compile "uy.kohesive.klutter:klutter-vertx3:$version_klutter"
     compile "uy.kohesive.klutter:klutter-vertx3-kodein:$version_klutter"
+    compile "uy.kohesive.klutter:klutter-conversion:$version_klutter"
 
     compile "com.github.salomonbrys.kodein:kodein:$version_kodein"
     compile "com.github.salomonbrys.kodein:kodein-conf:$version_kodein"

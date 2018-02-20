@@ -30,8 +30,10 @@ import uy.kohesive.kovert.vertx.InterceptRequest
 import uy.kohesive.kovert.vertx.InterceptRequestFailure
 import java.lang.reflect.Constructor
 import kotlin.reflect.*
+import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaType
+import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.jvm.reflect
 
 
@@ -215,10 +217,10 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             }
         }
     } else {
-        if (RoutingContext::class.defaultType.javaType == receiverType.javaType) {
+        if (RoutingContext::class.defaultType == receiverType) {
             EmptyContextFactory
         } else {
-            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
+            val contextConstructor = receiverType.jvmErasure.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
@@ -242,7 +244,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
     }
 
     val authForController = controller.javaClass.annotations.firstOrNull { it is Authority } as Authority?
-    val authForContext = receiverType.erasedType().annotations.firstOrNull { it is Authority } as Authority?
+    val authForContext = receiverType.jvmErasure.java.annotations.firstOrNull { it is Authority } as Authority?
     val authForDispatch = dispatchFunction.annotations.firstOrNull { it is Authority } as Authority?
 
     listOf(authForController, authForContext, authForDispatch).map { oneAuth ->
@@ -316,7 +318,7 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         ""
     }
 
-    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.erasedType().simpleName} $rendererMsg")
+    logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.jvmErasure.java.simpleName} $rendererMsg")
 
     setHandlerDispatchWithDataBinding(dispatchRoute, logger, controller, member,
             dispatchInstance, dispatchFunction,

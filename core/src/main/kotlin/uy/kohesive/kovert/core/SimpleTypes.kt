@@ -7,11 +7,12 @@ import java.time.temporal.Temporal
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
+import kotlin.reflect.jvm.jvmErasure
 
 
-fun isSimpleDataType(type: Class<*>) = type.isPrimitive || knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.name)
+fun isSimpleDataType(type: Class<out Any>) = type.isPrimitive || knownSimpleTypes.any { type.isAssignableFrom(it) } || simpleTypeNames.contains(type.name)
 // fun <T: Any> isSimpleDataType(type: KClass<T>) = isSimpleDataType(type.java.erasedType())
-fun isSimpleDataType(type: KType) = isSimpleDataType(type.erasedType())
+fun isSimpleDataType(type: KType) = isSimpleDataType(type.jvmErasure.java)
 
 fun isEnum(type: KType) = type.erasedType().isEnum
 

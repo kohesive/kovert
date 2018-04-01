@@ -1,10 +1,11 @@
 package uy.kohesive.kovert.vertx.sample.services
 
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.bind
-import com.github.salomonbrys.kodein.conf.global
-import com.github.salomonbrys.kodein.instance
-import com.github.salomonbrys.kodein.singleton
+import org.kodein.di.Kodein
+import org.kodein.di.conf.global
+import org.kodein.di.direct
+import org.kodein.di.generic.bind
+import org.kodein.di.generic.instance
+import org.kodein.di.generic.singleton
 
 interface CompanyService {
     fun findCompanyByName(name: String): Company?
@@ -19,9 +20,11 @@ object KodeinCompanyService {
     }
 }
 
-class MockCompanyService(val peopleService: PeopleService = Kodein.global.instance()): CompanyService {
+class MockCompanyService(val peopleService: PeopleService = Kodein.global.direct.instance()) : CompanyService {
     override fun findCompanyByName(name: String): Company? = mockData_companyByName.get(name.toLowerCase())
-    override fun findCompaniesByCountry(country: String): List<Company> = mockData_companyByName.values.filter { it.country.equals(country, ignoreCase = true) }
+    override fun findCompaniesByCountry(country: String): List<Company> =
+        mockData_companyByName.values.filter { it.country.equals(country, ignoreCase = true) }
+
     override fun upsertCompany(newCompany: Company): Unit {
         mockData_companyByName.put(newCompany.name.toLowerCase(), newCompany)
     }

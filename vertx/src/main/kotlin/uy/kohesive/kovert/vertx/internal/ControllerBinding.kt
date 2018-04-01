@@ -2,7 +2,6 @@ package uy.kohesive.kovert.vertx.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.netty.handler.codec.http.HttpHeaderNames
-import io.netty.handler.codec.http.HttpHeaders
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
@@ -29,8 +28,12 @@ import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptRequest
 import uy.kohesive.kovert.vertx.InterceptRequestFailure
 import java.lang.reflect.Constructor
-import kotlin.reflect.*
-import kotlin.reflect.full.*
+import kotlin.reflect.KCallable
+import kotlin.reflect.KParameter
+import kotlin.reflect.full.defaultType
+import kotlin.reflect.full.memberExtensionFunctions
+import kotlin.reflect.full.memberFunctions
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
@@ -45,7 +48,12 @@ import kotlin.reflect.jvm.reflect
  *
  * Optionally the controller can implement interfaces that allow further functionality, see ControllerTraits.kt for more information.
  */
-internal fun bindControllerController(router: Router, kotlinClassAsController: Any, atPath: String, verbAliases: List<PrefixAsVerbWithSuccessStatus> = emptyList()) {
+internal fun bindControllerController(
+    router: Router,
+    kotlinClassAsController: Any,
+    atPath: String,
+    verbAliases: List<PrefixAsVerbWithSuccessStatus> = emptyList()
+) {
     val path = atPath.mustNotEndWith('/').mustStartWith('/')
     val wildPath = path.mustNotEndWith('/').mustEndWith("/*")
 
@@ -57,7 +65,9 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         if (controller is InterceptRequestFailure) {
             try {
                 if (context.failed() && context.failure() !is HttpRedirect) {
-                    controller.interceptFailure(context, { handleExceptionResponse(controller, context, context.failure()) })
+                    controller.interceptFailure(
+                        context,
+                        { handleExceptionResponse(controller, context, context.failure()) })
                 } else {
                     handleExceptionResponse(controller, context, context.failure())
                 }
@@ -83,14 +93,26 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         }
     }
 
-    val controllerAnnotatedVerbAliases = (controller.javaClass.getAnnotation(VerbAliases::class.java)?.value?.toList() ?: emptyList()) +
-            listOf(controller.javaClass.getAnnotation(VerbAlias::class.java)).filterNotNull()
+    val controllerAnnotatedVerbAliases =
+        (controller.javaClass.getAnnotation(VerbAliases::class.java)?.value?.toList() ?: emptyList()) +
+                listOf(controller.javaClass.getAnnotation(VerbAlias::class.java)).filterNotNull()
 
     val prefixToVerbMap = (KovertConfig.defaultVerbAliases.values.toList() +
-            controllerAnnotatedVerbAliases.map { PrefixAsVerbWithSuccessStatus(it.prefix, it.verb, it.successStatusCode) } +
+            controllerAnnotatedVerbAliases.map {
+                PrefixAsVerbWithSuccessStatus(
+                    it.prefix,
+                    it.verb,
+                    it.successStatusCode
+                )
+            } +
             verbAliases).associateBy({ it.prefix }, { it })
 
-    fun memberNameToPath(name: String, knownVerb: VerbWithSuccessStatus?, knownLocation: String?, skipPrefix: Boolean): Triple<VerbWithSuccessStatus?, String, Set<String>> {
+    fun memberNameToPath(
+        name: String,
+        knownVerb: VerbWithSuccessStatus?,
+        knownLocation: String?,
+        skipPrefix: Boolean
+    ): Triple<VerbWithSuccessStatus?, String, Set<String>> {
         // split camel case with everything lowered case in the end, unless there are underscores then split literally with no case changing
         // Convert things that are proceeded by "by" to a variable ":variable"  (ByAge = /:age/)
         // Convert things that are proceeded by "with" to a path element + following variable (WithName = /name/:name/)
@@ -106,12 +128,14 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
 
         // TODO: change this to process by iterating the segments instead of regex replace
 
-        val memberPath = knownLocation ?: parts.drop(skipCount).joinToString("/").replace("""((^|[\/])(?:by|in)\/)((?:[\w])+)""".toRegex(), { match ->
-            // by/something = :something
-            val parmName = match.groups.get(3)!!.value
-            pathParms.add(parmName)
-            match.groups.get(2)!!.value + ":" + parmName
-        }).replace("""((^|[\/])with\/)((?:[\w])+)""".toRegex(), { match ->
+        val memberPath = knownLocation ?: parts.drop(skipCount).joinToString("/").replace(
+            """((^|[\/])(?:by|in)\/)((?:[\w])+)""".toRegex(),
+            { match ->
+                // by/something = :something
+                val parmName = match.groups.get(3)!!.value
+                pathParms.add(parmName)
+                match.groups.get(2)!!.value + ":" + parmName
+            }).replace("""((^|[\/])with\/)((?:[\w])+)""".toRegex(), { match ->
             // with/something = something/:something
             val parmName = match.groups.get(3)!!.value
             pathParms.add(parmName)
@@ -123,7 +147,13 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         return kotlin.Triple(memberVerb, memberPath, pathParms)
     }
 
-    fun acceptCallable(controller: Any, member: Any, memberName: String, dispatchInstance: Any, callable: KCallable<*>) {
+    fun acceptCallable(
+        controller: Any,
+        member: Any,
+        memberName: String,
+        dispatchInstance: Any,
+        callable: KCallable<*>
+    ) {
         val renderAnnotation = callable.annotations.firstOrNull { it is Rendered } as Rendered?
 
         val rendererInfo = if (renderAnnotation != null) {
@@ -137,7 +167,12 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
                     return
                 }
             }
-            RendererInfo(true, renderAnnotation.template.nullIfBlank(), renderAnnotation.contentType.nullIfBlank(), engine)
+            RendererInfo(
+                true,
+                renderAnnotation.template.nullIfBlank(),
+                renderAnnotation.contentType.nullIfBlank(),
+                engine
+            )
         } else {
             RendererInfo(false)
         }
@@ -145,9 +180,26 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
         if (callable.parameters.firstOrNull()?.kind == KParameter.Kind.INSTANCE && callable.parameters.drop(1).firstOrNull()?.kind == KParameter.Kind.EXTENSION_RECEIVER) {
             val verbAnnotation = callable.annotations.firstOrNull { it is Verb } as Verb?
             val locationAnnotation = callable.annotations.firstOrNull { it is Location } as Location?
-            val (verbAndStatus, subPath) = memberNameToPath(memberName, verbAnnotation?.toVerbStatus(), locationAnnotation?.path, verbAnnotation?.skipPrefix ?: false)
+            val (verbAndStatus, subPath) = memberNameToPath(
+                memberName,
+                verbAnnotation?.toVerbStatus(),
+                locationAnnotation?.path,
+                verbAnnotation?.skipPrefix ?: false
+            )
             if (verbAndStatus != null) {
-                setupContextAndRouteForMethod(router, logger, controller, path, verbAndStatus, subPath, member, memberName, dispatchInstance, callable, rendererInfo)
+                setupContextAndRouteForMethod(
+                    router,
+                    logger,
+                    controller,
+                    path,
+                    verbAndStatus,
+                    subPath,
+                    member,
+                    memberName,
+                    dispatchInstance,
+                    callable,
+                    rendererInfo
+                )
             }
         }
     }
@@ -164,7 +216,8 @@ internal fun bindControllerController(router: Router, kotlinClassAsController: A
             if (dispatchInstance != null && dispatchInstance is Function<*>) {
                 try {
                     (dispatchInstance as Function<*>).reflect()
-                    val callable = KCallableFuncRefOrLambda.fromInstance(dispatchInstance, member.name, member.annotations)
+                    val callable =
+                        KCallableFuncRefOrLambda.fromInstance(dispatchInstance, member.name, member.annotations)
                     acceptCallable(controller, member, member.name, dispatchInstance, callable)
                 } catch (ex: IllegalStateException) {
                     logger.debug("Ignoring property ${member.name}, is of type Function but doesn't appear to have KFunction meta-data (Internal Kotlin thing)")
@@ -183,20 +236,24 @@ internal fun PrefixAsVerbWithSuccessStatus.toVerbStatus() = VerbWithSuccessStatu
 internal fun Verb.toVerbStatus() = VerbWithSuccessStatus(this.verb, this.successStatusCode)
 
 
-internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(HttpVerb.GET to HttpMethod.GET,
-        HttpVerb.PUT to HttpMethod.PUT,
-        HttpVerb.POST to HttpMethod.POST,
-        HttpVerb.DELETE to HttpMethod.DELETE,
-        HttpVerb.HEAD to HttpMethod.HEAD,
-        HttpVerb.PATCH to HttpMethod.PATCH)
+internal val verbToVertx: Map<HttpVerb, HttpMethod> = mapOf(
+    HttpVerb.GET to HttpMethod.GET,
+    HttpVerb.PUT to HttpMethod.PUT,
+    HttpVerb.POST to HttpMethod.POST,
+    HttpVerb.DELETE to HttpMethod.DELETE,
+    HttpVerb.HEAD to HttpMethod.HEAD,
+    HttpVerb.PATCH to HttpMethod.PATCH
+)
 
 
 @Suppress("UNCHECKED_CAST")
-private fun setupContextAndRouteForMethod(router: Router, logger: Logger, controller: Any, rootPath: String,
-                                          verbAndStatus: VerbWithSuccessStatus, subPath: String,
-                                          member: Any, memberName: String,
-                                          dispatchInstance: Any, dispatchFunction: KCallable<*>,
-                                          rendererInfo: RendererInfo) {
+private fun setupContextAndRouteForMethod(
+    router: Router, logger: Logger, controller: Any, rootPath: String,
+    verbAndStatus: VerbWithSuccessStatus, subPath: String,
+    member: Any, memberName: String,
+    dispatchInstance: Any, dispatchFunction: KCallable<*>,
+    rendererInfo: RendererInfo
+) {
     val receiverType = dispatchFunction.parameters.first { it.kind == KParameter.Kind.EXTENSION_RECEIVER }.type
 
     val contextFactory = if (controller is ContextFactory<*>) {
@@ -205,7 +262,8 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         if (receiverType.isAssignableFrom(factoryType)) {
             controller
         } else {
-            val contextConstructor = receiverType.erasedType().kotlin.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
+            val contextConstructor = receiverType.erasedType()
+                .kotlin.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (RoutingContext::class.defaultType.javaType == receiverType.javaType) {
                 EmptyContextFactory
             } else if (contextConstructor != null) {
@@ -220,7 +278,8 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         if (RoutingContext::class.defaultType == receiverType) {
             EmptyContextFactory
         } else {
-            val contextConstructor = receiverType.jvmErasure.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
+            val contextConstructor =
+                receiverType.jvmErasure.constructors.firstOrNull { it.parameters.size == 1 && it.parameters.first().type == RoutingContext::class.defaultType }
             if (contextConstructor != null) {
                 // TODO: M13 keep Kotlin constructor because we can support default values, and constructors that have other things OTHER than the RoutingContext but are all injected or defaulted or nullable
                 TypedContextFactory(contextConstructor.javaConstructor!!)
@@ -254,56 +313,56 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
             AuthorityInfo(false, emptyList(), false)
         }
     }.filter { authInfo -> authInfo.requiresLogin || authInfo.roles.isNotEmpty() }
-            .forEach { authInfo ->
-                val authRoute = router.route(finalRoutePath).method(vertxVerb)
-                authRoute.handler { routeContext ->
-                    try {
-                        val user: User? = routeContext.user()
-                        // we code all cases so that fall through unexpectedly is a failure case,
-                        // we don't want accidental success here
-                        if (user == null && !authInfo.requiresLogin && authInfo.roles.isEmpty()) {
-                            // we don't have a user, but no one cares, continue
-                            routeContext.next()
-                            return@handler
-                        } else if (user == null) {
-                            // all other cases need a user
-                            routeContext.fail(HttpErrorUnauthorized())
-                            return@handler
-                        } else if (authInfo.requiresLogin && authInfo.roles.isEmpty()) {
-                            // we have a user and only require a login to continue
-                            routeContext.next()
-                            return@handler
-                        } else if (authInfo.roles.isNotEmpty()) {
-                            val promises = authInfo.roles.map {
-                                val deferred = deferred<Boolean, Exception>()
-                                user.isAuthorised(it, promiseResult(deferred))
-                                deferred.promise
-                            }
-                            all(promises).success { results ->
-                                if (authInfo.requireAll && results.all { it == true }) {
-                                    routeContext.next()
-                                } else if (!authInfo.requireAll && results.any { it == true }) {
-                                    routeContext.next()
-                                } else {
-                                    // unknown case, fail!
-                                    routeContext.fail(HttpErrorForbidden())
-                                }
-                            }.fail { ex ->
-                                // unknown case, fail!
-                                routeContext.fail(HttpErrorCode("unknown", 500, ex))
-                            }
-                            return@handler
-                        } else {
-                            // unknown case, fail!
-                            routeContext.fail(HttpErrorCode("unknown", 500))
-                            return@handler
+        .forEach { authInfo ->
+            val authRoute = router.route(finalRoutePath).method(vertxVerb)
+            authRoute.handler { routeContext ->
+                try {
+                    val user: User? = routeContext.user()
+                    // we code all cases so that fall through unexpectedly is a failure case,
+                    // we don't want accidental success here
+                    if (user == null && !authInfo.requiresLogin && authInfo.roles.isEmpty()) {
+                        // we don't have a user, but no one cares, continue
+                        routeContext.next()
+                        return@handler
+                    } else if (user == null) {
+                        // all other cases need a user
+                        routeContext.fail(HttpErrorUnauthorized())
+                        return@handler
+                    } else if (authInfo.requiresLogin && authInfo.roles.isEmpty()) {
+                        // we have a user and only require a login to continue
+                        routeContext.next()
+                        return@handler
+                    } else if (authInfo.roles.isNotEmpty()) {
+                        val promises = authInfo.roles.map {
+                            val deferred = deferred<Boolean, Exception>()
+                            user.isAuthorised(it, promiseResult(deferred))
+                            deferred.promise
                         }
-                    } catch (rawEx: Throwable) {
-                        val ex = unwrapInvokeException(rawEx)
-                        routeContext.fail(ex)
+                        all(promises).success { results ->
+                            if (authInfo.requireAll && results.all { it == true }) {
+                                routeContext.next()
+                            } else if (!authInfo.requireAll && results.any { it == true }) {
+                                routeContext.next()
+                            } else {
+                                // unknown case, fail!
+                                routeContext.fail(HttpErrorForbidden())
+                            }
+                        }.fail { ex ->
+                            // unknown case, fail!
+                            routeContext.fail(HttpErrorCode("unknown", 500, ex))
+                        }
+                        return@handler
+                    } else {
+                        // unknown case, fail!
+                        routeContext.fail(HttpErrorCode("unknown", 500))
+                        return@handler
                     }
+                } catch (rawEx: Throwable) {
+                    val ex = unwrapInvokeException(rawEx)
+                    routeContext.fail(ex)
                 }
             }
+        }
 
     val dispatchRoute = router.route(finalRoutePath).method(vertxVerb)
     val disallowVoid = verbAndStatus.verb == HttpVerb.GET
@@ -312,7 +371,8 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
         if (rendererInfo.dynamic) {
             "-- w/rendering dynamic"
         } else {
-            "-- w/rendering template '${rendererInfo.template}' [content-type: ${rendererInfo.overrideContentType ?: "default"}] via engine ${rendererInfo.engine!!.javaClass.name}"
+            "-- w/rendering template '${rendererInfo.template}' [content-type: ${rendererInfo.overrideContentType
+                    ?: "default"}] via engine ${rendererInfo.engine!!.javaClass.name}"
         }
     } else {
         ""
@@ -320,14 +380,27 @@ private fun setupContextAndRouteForMethod(router: Router, logger: Logger, contro
 
     logger.info("Binding ${memberName} to HTTP ${verbAndStatus.verb}:${verbAndStatus.successStatusCode} ${finalRoutePath} w/context ${receiverType.jvmErasure.java.simpleName} $rendererMsg")
 
-    setHandlerDispatchWithDataBinding(dispatchRoute, logger, controller, member,
-            dispatchInstance, dispatchFunction,
-            contextFactory, disallowVoid,
-            verbAndStatus.successStatusCode, rendererInfo)
+    setHandlerDispatchWithDataBinding(
+        dispatchRoute, logger, controller, member,
+        dispatchInstance, dispatchFunction,
+        contextFactory, disallowVoid,
+        verbAndStatus.successStatusCode, rendererInfo
+    )
 }
 
-internal data class RendererInfo(val enabled: Boolean = false, val template: String? = null, val overrideContentType: String? = null, val engine: KovertConfig.RegisteredTemplateEngine? = null, val dynamic: Boolean = template.isNullOrBlank())
-internal data class AuthorityInfo(val requiresLogin: Boolean = false, val roles: List<String>, val requireAll: Boolean = false)
+internal data class RendererInfo(
+    val enabled: Boolean = false,
+    val template: String? = null,
+    val overrideContentType: String? = null,
+    val engine: KovertConfig.RegisteredTemplateEngine? = null,
+    val dynamic: Boolean = template.isNullOrBlank()
+)
+
+internal data class AuthorityInfo(
+    val requiresLogin: Boolean = false,
+    val roles: List<String>,
+    val requireAll: Boolean = false
+)
 
 internal fun handleExceptionResponse(controller: Any, context: RoutingContext, rawEx: Throwable) {
     val logger = LoggerFactory.getLogger(controller.javaClass)
@@ -344,34 +417,40 @@ internal fun handleExceptionResponse(controller: Any, context: RoutingContext, r
             context.response().setStatusCode(400).setStatusMessage("Invalid parameters").end()
         }
         is HttpErrorCodeWithBody -> {
-            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}", if (ex.code == 500) ex else exReport)
+            logger.error(
+                "HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}",
+                if (ex.code == 500) ex else exReport
+            )
             if (ex.body is String) {
                 context.response()
-                        .setStatusCode(ex.code)
-                        .setStatusMessage("Error ${ex.code}")
-                        .putHeader(HttpHeaderNames.CONTENT_TYPE, "text/html")
-                        .end(ex.body as String)
+                    .setStatusCode(ex.code)
+                    .setStatusMessage("Error ${ex.code}")
+                    .putHeader(HttpHeaderNames.CONTENT_TYPE, "text/html")
+                    .end(ex.body as String)
             } else {
                 val contentType = "application/json"
                 if (ex.body is Void || ex.body is Unit || ex.body is Nothing) {
                     context.response()
-                            .setStatusCode(ex.code)
-                            .setStatusMessage("Error ${ex.code}")
-                            .putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
-                            .end()
+                        .setStatusCode(ex.code)
+                        .setStatusMessage("Error ${ex.code}")
+                        .putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
+                        .end()
                 } else {
                     val JSON: ObjectMapper = Json.mapper
                     context.response()
-                            .setStatusCode(ex.code)
-                            .setStatusMessage("Error ${ex.code}")
-                            .putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
-                            .end(JSON.writeValueAsString(ex.body))
+                        .setStatusCode(ex.code)
+                        .setStatusMessage("Error ${ex.code}")
+                        .putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
+                        .end(JSON.writeValueAsString(ex.body))
                 }
             }
 
         }
         is HttpErrorCode -> {
-            logger.error("HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}", if (ex.code == 500) ex else exReport)
+            logger.error(
+                "HTTP CODE ${ex.code} - ${context.normalisedPath()} - ${ex.message}",
+                if (ex.code == 500) ex else exReport
+            )
             context.response().setStatusCode(ex.code).setStatusMessage("Error ${ex.code}").end()
         }
         else -> {

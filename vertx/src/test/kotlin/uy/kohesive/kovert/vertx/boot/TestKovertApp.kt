@@ -1,6 +1,5 @@
 package uy.kohesive.kovert.vertx.boot.test
 
-import com.github.salomonbrys.kodein.*
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.http.HttpMethod
@@ -10,6 +9,15 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
 import org.junit.Test
+import org.kodein.di.Kodein
+import org.kodein.di.KodeinAware
+import org.kodein.di.description
+import org.kodein.di.direct
+import org.kodein.di.generic.bind
+import org.kodein.di.generic.instance
+import org.kodein.di.generic.singleton
+import org.kodein.di.generic.with
+import org.slf4j.Logger
 import uy.klutter.config.typesafe.PathConfig
 import uy.klutter.config.typesafe.kodein.ConfigModule
 import uy.klutter.config.typesafe.kodein.importConfig
@@ -31,17 +39,19 @@ import java.util.*
 
 
 class TestKovertApp {
-    @Test fun testApp() {
+    @Test
+    fun testApp() {
         val testConf: Path = Paths.get(this.javaClass.getClassLoader().getResource("test.conf").toURI())!!
         val kodein = Kodein {
             constant("CONFIGFILE") with testConf
             import(KovertApp.makeKodeinModule(testConf))
         }
-        println("KODEIN BINDINGS:\n${kodein.container.bindings.description}")
+        println("KODEIN BINDINGS:\n${kodein.container.tree.bindings.description()}")
 
         val deployment = KovertApp(kodein).start().get()
         try {
-            val client = deployment.vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(kodein.instance<KovertVerticleConfig>().listeners.first().port))
+            val client =
+                deployment.vertx.createHttpClient(HttpClientOptions().setDefaultHost("localhost").setDefaultPort(kodein.direct.instance<KovertVerticleConfig>().listeners.first().port))
 
             val frankJson = """{"id":1,"name":"Frank","age":30}"""
             client.testServer(HttpMethod.GET, "api/person/1", assertResponse = frankJson)
@@ -51,14 +61,30 @@ class TestKovertApp {
             client.testServer(HttpMethod.GET, "api/person/id/1991991", assertStatus = 404)
             client.testServer(HttpMethod.GET, "api/person/name/doogie", assertStatus = 404)
 
-            client.testServer(HttpMethod.GET, "/index.html", assertResponse = """<html><head></head><body>Shhhh!</body></html>""")
+            client.testServer(
+                HttpMethod.GET,
+                "/index.html",
+                assertResponse = """<html><head></head><body>Shhhh!</body></html>"""
+            )
 
             client.testServer(HttpMethod.GET, "/something/funky", assertResponse = "\"Funky\"")
 
             val collokiaJson = """{"name":"Collokia","country":"Uruguay"}"""
-            client.testServer(HttpMethod.GET, "api/company/Collokia", assertResponse = """{"status":"OK","data":$collokiaJson}""")
-            client.testServer(HttpMethod.GET, "api/company/name/Collokia", assertResponse = """{"status":"OK","data":$collokiaJson}""")
-            client.testServer(HttpMethod.GET, "api/company/country/Uruguay", assertResponse = """{"status":"OK","data":[$collokiaJson,{"name":"Bremeld","country":"Uruguay"}]}""")
+            client.testServer(
+                HttpMethod.GET,
+                "api/company/Collokia",
+                assertResponse = """{"status":"OK","data":$collokiaJson}"""
+            )
+            client.testServer(
+                HttpMethod.GET,
+                "api/company/name/Collokia",
+                assertResponse = """{"status":"OK","data":$collokiaJson}"""
+            )
+            client.testServer(
+                HttpMethod.GET,
+                "api/company/country/Uruguay",
+                assertResponse = """{"status":"OK","data":[$collokiaJson,{"name":"Bremeld","country":"Uruguay"}]}"""
+            )
 
         } finally {
             deployment.vertx.promiseUndeploy(deployment.deploymentId).get()
@@ -67,7 +93,7 @@ class TestKovertApp {
     }
 }
 
-class KovertApp(override val kodein: Kodein): KodeinAware {
+class KovertApp(override val kodein: Kodein) : KodeinAware {
     companion object {
         fun makeKodeinModule(configFile: Path) = Kodein.Module {
             importConfig(loadConfig(PathConfig(configFile))) {
@@ -86,17 +112,21 @@ class KovertApp(override val kodein: Kodein): KodeinAware {
             import(CompanyService.kodeinModule)
         }
     }
+
+    val LOG: Logger by instance()
+
     fun start(): Promise<VertxDeployment, Exception> {
+        LOG.warn("Starting!")
         KovertConfig.addVerbAlias("find", HttpVerb.GET)
 
         val initControllers = fun Router.(): Unit {
-            bindController(PeopleController(instance()), "/api/person")
-            bindController(CompanyController(instance()), "/api/company")
+            bindController(PeopleController(direct.instance()), "/api/person")
+            bindController(CompanyController(direct.instance()), "/api/company")
             bindController(RootController(), "/")
         }
 
         val deferred = deferred<VertxDeployment, Exception>()
-        val configFile: Path = kodein.instance("CONFIGFILE")
+        val configFile: Path by kodein.instance("CONFIGFILE")
         KovertVertx.start(kodein, workingDir = configFile.parent) bind { vertx ->
             KovertVerticle.deploy(vertx, kodein, routerInit = initControllers) success { deployId ->
                 deferred.resolve(VertxDeployment(vertx, deployId))
@@ -133,8 +163,12 @@ class CompanyController(val companyService: CompanyService) : InterceptDispatch<
         return StandardizedResponse(data = dispatcher())
     }
 
-    fun RestContext.getByName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
-    fun RestContext.findWithName(name: String): Company = companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+    fun RestContext.getByName(name: String): Company =
+        companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+
+    fun RestContext.findWithName(name: String): Company =
+        companyService.findCompanyByName(name) ?: throw HttpErrorNotFound()
+
     fun RestContext.findWithCountry(country: String): List<Company> {
         val found = companyService.findCompaniesByCountry(country)
         if (found.isEmpty()) throw HttpErrorNotFound()
@@ -158,10 +192,10 @@ class PeopleService {
     }
 
     private val people = listOf(
-            Person(1, "Frank", 30),
-            Person(2, "Domingo", 19),
-            Person(3, "Mariana", 22),
-            Person(4, "Lucia", 31)
+        Person(1, "Frank", 30),
+        Person(2, "Domingo", 19),
+        Person(3, "Mariana", 22),
+        Person(4, "Lucia", 31)
     ).associateByTo(HashMap()) { it.id }
 
     fun findPersonById(id: Int): Person? = people.get(id)
@@ -174,7 +208,7 @@ class PeopleService {
 class CompanyService(val companyData: CompanyConfig, val employees: PeopleService) {
     companion object {
         val configModule = Kodein.ConfigModule {
-            bind<CompanyConfig>() fromConfig(it)
+            bind<CompanyConfig>() fromConfig (it)
         }
 
 
@@ -183,8 +217,11 @@ class CompanyService(val companyData: CompanyConfig, val employees: PeopleServic
         }
     }
 
-    fun findCompanyByName(name: String): Company? = companyData.defaultCompanies.firstOrNull { it.name.equals(name, ignoreCase = true) }
-    fun findCompaniesByCountry(country: String): List<Company> = companyData.defaultCompanies.filter { it.country.equals(country, ignoreCase = true) }
+    fun findCompanyByName(name: String): Company? =
+        companyData.defaultCompanies.firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+    fun findCompaniesByCountry(country: String): List<Company> =
+        companyData.defaultCompanies.filter { it.country.equals(country, ignoreCase = true) }
 }
 
 data class CompanyConfig(val defaultCompanies: List<Company>)

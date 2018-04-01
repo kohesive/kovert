@@ -15,7 +15,8 @@ class PublicAccess(private val routingContext: RoutingContext) {
 
 class UserSessionSecured(private val routingContext: RoutingContext) {
     // must be logged in, if not, bad!! (the AuthHandler should already prevent getting this far)
-    val user: User = routingContext.user() as? uy.kohesive.kovert.vertx.sample.services.User ?: throw HttpErrorUnauthorized()
+    val user: User =
+        routingContext.user() as? uy.kohesive.kovert.vertx.sample.services.User ?: throw HttpErrorUnauthorized()
 
     fun logout() {
         routingContext.clearUser()

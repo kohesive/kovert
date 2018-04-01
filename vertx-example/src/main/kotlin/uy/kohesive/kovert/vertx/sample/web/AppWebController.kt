@@ -13,5 +13,5 @@ class AppWebController {
 
 open class BaseAppModel(val user: User, val commonLinks: BaseLinks)
 open class BaseLinks(
-        val logout: String = "/logout"  // TODO: use a reference to get the logout link
+    val logout: String = "/logout"  // TODO: use a reference to get the logout link
 )

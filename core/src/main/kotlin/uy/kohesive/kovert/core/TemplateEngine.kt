@@ -14,4 +14,5 @@ interface ModelAndTemplateRendering<T : Any> {
     val template: String
 }
 
-class ModelAndRenderTemplate<T : Any>(override val model: T, override val template: String) : ModelAndTemplateRendering<T>
+class ModelAndRenderTemplate<T : Any>(override val model: T, override val template: String) :
+    ModelAndTemplateRendering<T>

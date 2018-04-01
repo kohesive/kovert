@@ -1,80 +1,80 @@
 <configuration scan="true" scanPeriod="60 seconds">
 
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-        <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-</appender>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-<appender name="WEB" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/app.log</file>
+    <appender name="WEB" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/app.log</file>
 
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-        <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-        <maxHistory>14</maxHistory>
-        <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-            <maxFileSize>100MB</maxFileSize>
-        </timeBasedFileNamingAndTriggeringPolicy>
-    </rollingPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
 
-    <encoder>
-        <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-</appender>
+        <encoder>
+            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-<appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/error.log</file>
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-        <level>ERROR</level>
-    </filter>
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
 
-    <filter class="ch.qos.logback.access.filter.CountingFilter">
-        <name>errorLogCountingFilter</name>
-    </filter>
+        <filter class="ch.qos.logback.access.filter.CountingFilter">
+            <name>errorLogCountingFilter</name>
+        </filter>
 
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-        <fileNamePattern>logs/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-        <maxHistory>14</maxHistory>
-        <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-            <maxFileSize>100MB</maxFileSize>
-        </timeBasedFileNamingAndTriggeringPolicy>
-    </rollingPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
 
-    <encoder>
-        <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-</appender>
+        <encoder>
+            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-<appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/access.log</file>
+    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/access.log</file>
 
-    <filter class="ch.qos.logback.access.filter.CountingFilter">
-        <name>accessLogCountingFilter</name>
-    </filter>
+        <filter class="ch.qos.logback.access.filter.CountingFilter">
+            <name>accessLogCountingFilter</name>
+        </filter>
 
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-        <fileNamePattern>logs/access.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-        <maxHistory>14</maxHistory>
-        <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-            <maxFileSize>100MB</maxFileSize>
-        </timeBasedFileNamingAndTriggeringPolicy>
-    </rollingPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/access.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
 
-    <encoder>
-        <pattern>%msg%n</pattern>
-    </encoder>
-</appender>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
 
-<logger name="uy.kohesive.kovert" level="DEBUG" />
+    <logger name="uy.kohesive.kovert" level="DEBUG"/>
 
-<logger name="io.vertx.ext.web.handler.impl.LoggerHandlerImpl" level="INFO" additivity="false">
-    <appender-ref ref="ACCESS"/>
-    <appender-ref ref="STDOUT"/>
-</logger>
+    <logger name="io.vertx.ext.web.handler.impl.LoggerHandlerImpl" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS"/>
+        <appender-ref ref="STDOUT"/>
+    </logger>
 
-<root level="INFO">
-    <appender-ref ref="WEB"/>
-    <appender-ref ref="ERROR"/>
-    <appender-ref ref="STDOUT"/>
-</root>
+    <root level="INFO">
+        <appender-ref ref="WEB"/>
+        <appender-ref ref="ERROR"/>
+        <appender-ref ref="STDOUT"/>
+    </root>
 </configuration>

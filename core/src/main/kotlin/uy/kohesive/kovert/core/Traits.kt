@@ -6,7 +6,7 @@ package uy.kohesive.kovert.core
  * this request with either an exception, or ending the handler chain (platform specific).
  */
 interface CoreInterceptRequest<T> {
-    fun interceptRequest(rawContext: T, nextHandler: ()->Unit)
+    fun interceptRequest(rawContext: T, nextHandler: () -> Unit)
 }
 
 /**
@@ -15,8 +15,8 @@ interface CoreInterceptRequest<T> {
  * throwing exceptions. And exceptions can be caught and handled from the actual dispatch call by wrapping the call
  * to nextHandler() in a try...catch.
  */
-interface CoreInterceptDispatch<T: Any> {
-    fun T.interceptDispatch(member: Any, dispatcher: ()->Any?): Any?
+interface CoreInterceptDispatch<T : Any> {
+    fun T.interceptDispatch(member: Any, dispatcher: () -> Any?): Any?
 }
 
 /**
@@ -25,7 +25,7 @@ interface CoreInterceptDispatch<T: Any> {
  * system (platform specific) to end the route.
  */
 interface CoreInterceptRequestFailure<T> {
-    fun interceptFailure(rawContext: T, nextHandler: ()->Unit)
+    fun interceptFailure(rawContext: T, nextHandler: () -> Unit)
 }
 
 /**

@@ -1,15 +1,14 @@
 package uy.kohesive.kovert.vertx.sample
 
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.conf.KodeinGlobalAware
-import com.github.salomonbrys.kodein.conf.global
-import com.github.salomonbrys.kodein.instance
-import com.github.salomonbrys.kodein.withClass
 import freemarker.cache.TemplateNameFormat
 import freemarker.template.Configuration
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BasicAuthHandler
 import nl.komponents.kovenant.functional.bind
+import org.kodein.di.Kodein
+import org.kodein.di.conf.KodeinGlobalAware
+import org.kodein.di.conf.global
+import org.kodein.di.generic.instance
 import org.slf4j.Logger
 import uy.klutter.config.typesafe.PathConfig
 import uy.klutter.config.typesafe.ReferenceConfig
@@ -35,7 +34,8 @@ import java.nio.file.Paths
 
 class App(val configFile: Path) : KodeinGlobalAware {
     companion object {
-        @JvmStatic fun main(args: Array<String>) {
+        @JvmStatic
+        fun main(args: Array<String>) {
             if (args.size != 1) {
                 println("Invalid usage.  ConfigFile parameter is required!")
                 println()
@@ -49,7 +49,7 @@ class App(val configFile: Path) : KodeinGlobalAware {
         }
     }
 
-    val LOG: Logger = withClass().instance()
+    val LOG: Logger by instance()
 
     fun start() {
         // injection starting point, including configuration loading and delegating to other modules
@@ -81,7 +81,7 @@ class App(val configFile: Path) : KodeinGlobalAware {
         val configFileLocation = configFile.getParent() // make things relative to the config file location
 
         val freemarkerEngine: Configuration = run {
-            val locationConfig: FreemarkerLocationCfg = kodein.instance()
+            val locationConfig: FreemarkerLocationCfg by kodein.instance()
             val cfg = Configuration(Configuration.VERSION_2_3_23)
             cfg.setDefaultEncoding("UTF-8")
             cfg.setTemplateNameFormat(TemplateNameFormat.DEFAULT_2_4_0)
@@ -118,10 +118,12 @@ class App(val configFile: Path) : KodeinGlobalAware {
         val bodyHandlersFor = listOf(apiMountPoint, publicMountPoint, privateMountPoint)
 
         val appCustomization = KovertVerticleCustomization(
-                bodyHandlerRoutePrefixes = if (bodyHandlersFor.any { it.isBlank() }) OptionalHandlerRoutePrefixes.all() else OptionalHandlerRoutePrefixes.prefixedBy(bodyHandlersFor),
-                authProvider = authentication,
-                authHandler = BasicAuthHandler.create(authentication),
-                authHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.prefixedBy(listOf(privateMountPoint))
+            bodyHandlerRoutePrefixes = if (bodyHandlersFor.any { it.isBlank() }) OptionalHandlerRoutePrefixes.all() else OptionalHandlerRoutePrefixes.prefixedBy(
+                bodyHandlersFor
+            ),
+            authProvider = authentication,
+            authHandler = BasicAuthHandler.create(authentication),
+            authHandlerRoutePrefixes = OptionalHandlerRoutePrefixes.prefixedBy(listOf(privateMountPoint))
         )
 
         // startup asynchronously...

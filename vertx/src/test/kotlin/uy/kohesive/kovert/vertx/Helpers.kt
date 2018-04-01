@@ -24,11 +24,21 @@ fun HttpClientRequest.promise(init: HttpClientRequest.() -> Unit): Promise<HttpC
     return promise(init, deferred)
 }
 
-fun HttpClientRequest.promise(init: HttpClientRequest.() -> Unit, deferred: Deferred<HttpClientResult, Throwable>): Promise<HttpClientResult, Throwable> {
+fun HttpClientRequest.promise(
+    init: HttpClientRequest.() -> Unit,
+    deferred: Deferred<HttpClientResult, Throwable>
+): Promise<HttpClientResult, Throwable> {
     try {
         handler { response ->
             response.bodyHandler { buff ->
-                deferred.resolve(HttpClientResult(response.statusCode(), response.statusMessage(), if (buff.length() == 0) null else String(buff.getBytes()), response.headers()))
+                deferred.resolve(
+                    HttpClientResult(
+                        response.statusCode(),
+                        response.statusMessage(),
+                        if (buff.length() == 0) null else String(buff.getBytes()),
+                        response.headers()
+                    )
+                )
             }
         }
         exceptionHandler { ex -> deferred.reject(ex) }
@@ -40,7 +50,11 @@ fun HttpClientRequest.promise(init: HttpClientRequest.() -> Unit, deferred: Defe
     return deferred.promise
 }
 
-fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpClientRequest.() -> Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClient.promiseRequest(
+    verb: HttpMethod,
+    requestUri: String,
+    init: HttpClientRequest.() -> Unit
+): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     try {
         return this.request(verb, requestUri).promise(init, deferred)
@@ -50,7 +64,11 @@ fun HttpClient.promiseRequest(verb: HttpMethod, requestUri: String, init: HttpCl
     return deferred.promise
 }
 
-fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: HttpClientRequest.() -> Unit): Promise<HttpClientResult, Throwable> {
+fun HttpClient.promiseRequestAbs(
+    verb: HttpMethod,
+    requestUri: String,
+    init: HttpClientRequest.() -> Unit
+): Promise<HttpClientResult, Throwable> {
     val deferred = deferred<HttpClientResult, Throwable>()
     try {
         return this.requestAbs(verb, requestUri).promise(init, deferred)
@@ -60,7 +78,15 @@ fun HttpClient.promiseRequestAbs(verb: HttpMethod, requestUri: String, init: Htt
     return deferred.promise
 }
 
-fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, assertContentType: String? = null, writeJson: String? = null, cookie: String? = null): String? {
+fun HttpClient.testServer(
+    verb: HttpMethod,
+    path: String,
+    assertStatus: Int = 200,
+    assertResponse: String? = null,
+    assertContentType: String? = null,
+    writeJson: String? = null,
+    cookie: String? = null
+): String? {
     val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
         if (cookie != null) {
             putHeader(HttpHeaders.COOKIE, cookie)
@@ -72,9 +98,17 @@ fun HttpClient.testServer(verb: HttpMethod, path: String, assertStatus: Int = 20
         }
     }).get()
 
-    assertEquals(assertStatus, result.statusCode, "Error with ${verb} at ${path}, wrong status code.  expected $assertStatus, but received ${result.statusCode}")
+    assertEquals(
+        assertStatus,
+        result.statusCode,
+        "Error with ${verb} at ${path}, wrong status code.  expected $assertStatus, but received ${result.statusCode}"
+    )
     if (assertResponse != null) {
-        assertEquals(assertResponse, result.body, "Error with ${verb} at ${path}, wrong body response.  expected: \n$assertResponse\nbut received:\n${result.body}")
+        assertEquals(
+            assertResponse,
+            result.body,
+            "Error with ${verb} at ${path}, wrong body response.  expected: \n$assertResponse\nbut received:\n${result.body}"
+        )
     }
     if (assertContentType != null) {
         assertEquals(assertContentType, result.headers.get(HttpHeaders.CONTENT_TYPE))
@@ -88,10 +122,21 @@ fun buildCookieHeader(oldCookie: String?, cookieSetters: List<String>): String? 
     val newCookies = cookieSetters.map { it.substringBefore(';') }
     newCookieMap.putAll(oldCookies.map { it.substringBefore('=') to UrlEncoding.decode(it.substringAfter('=')) })
     newCookieMap.putAll(newCookies.map { it.substringBefore('=') to UrlEncoding.decode(it.substringAfter('=')) })
-    return if (newCookieMap.isEmpty()) null else newCookieMap.entries.map { it.key + "=" + UrlEncoding.encodeQueryNameOrValue(it.value) }.joinToString("; ")
+    return if (newCookieMap.isEmpty()) null else newCookieMap.entries.map {
+        it.key + "=" + UrlEncoding.encodeQueryNameOrValue(
+            it.value
+        )
+    }.joinToString("; ")
 }
 
-fun HttpClient.testServerAltContentType(verb: HttpMethod, path: String, assertStatus: Int = 200, assertResponse: String? = null, writeJson: String? = null, cookie: String? = null): String? {
+fun HttpClient.testServerAltContentType(
+    verb: HttpMethod,
+    path: String,
+    assertStatus: Int = 200,
+    assertResponse: String? = null,
+    writeJson: String? = null,
+    cookie: String? = null
+): String? {
     val result = promiseRequest(verb, "${path.mustStartWith('/')}", {
         if (cookie != null) {
             putHeader(HttpHeaders.COOKIE, cookie)

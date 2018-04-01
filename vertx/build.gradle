@@ -10,8 +10,8 @@ dependencies {
     compile "uy.kohesive.klutter:klutter-vertx3-kodein:$version_klutter"
     compile "uy.kohesive.klutter:klutter-conversion:$version_klutter"
 
-    compile "com.github.salomonbrys.kodein:kodein:$version_kodein"
-    compile "com.github.salomonbrys.kodein:kodein-conf:$version_kodein"
+    compile "org.kodein.di:kodein-di-generic-jvm:$version_kodein"
+    compile "org.kodein.di:kodein-di-conf-jvm:$version_kodein"
 
     compile "io.vertx:vertx-core:$version_vertx"
     compile "io.vertx:vertx-web:$version_vertx"

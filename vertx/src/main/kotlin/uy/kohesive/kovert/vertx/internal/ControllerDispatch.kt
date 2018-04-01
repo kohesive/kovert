@@ -3,7 +3,6 @@ package uy.kohesive.kovert.vertx.internal
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.type.TypeFactory
 import io.netty.handler.codec.http.HttpHeaderNames
-import io.netty.handler.codec.http.HttpHeaders
 import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
 import io.vertx.ext.web.Route
@@ -16,20 +15,20 @@ import uy.klutter.reflect.unwrapInvokeException
 import uy.kohesive.kovert.core.*
 import uy.kohesive.kovert.vertx.ContextFactory
 import uy.kohesive.kovert.vertx.InterceptDispatch
-import java.lang.reflect.Type
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
-import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
 
 
 @Suppress("UNCHECKED_CAST")
-internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
-                                               controller: Any, member: Any, dispatchInstance: Any,
-                                               dispatchFunction: KCallable<*>,
-                                               contextFactory: ContextFactory<*>,
-                                               disallowVoid: Boolean, defaultSuccessStatus: Int,
-                                               rendererInfo: RendererInfo) {
+internal fun setHandlerDispatchWithDataBinding(
+    route: Route, logger: Logger,
+    controller: Any, member: Any, dispatchInstance: Any,
+    dispatchFunction: KCallable<*>,
+    contextFactory: ContextFactory<*>,
+    disallowVoid: Boolean, defaultSuccessStatus: Int,
+    rendererInfo: RendererInfo
+) {
 
     val JSON: ObjectMapper = Json.mapper
 
@@ -60,12 +59,19 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     } else {
                         val parmVal = request.getParam(param.name)
                         if ((missing || parmVal == null) && !param.isOptional && !param.type.isMarkedNullable) {
-                            throw HttpErrorCode("Expected parameter ${param.name} for non optional and non nullable parameter, but parameter is missing for [$dispatchFunction]", 400)
+                            throw HttpErrorCode(
+                                "Expected parameter ${param.name} for non optional and non nullable parameter, but parameter is missing for [$dispatchFunction]",
+                                400
+                            )
                         }
 
                         if (parmVal != null) {
                             try {
-                                val temp: Any = TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass, param.type.jvmErasure.java, parmVal)
+                                val temp: Any = TypeConversionConfig.defaultConverter.convertValue<Any, Any>(
+                                    parmVal.javaClass,
+                                    param.type.jvmErasure.java,
+                                    parmVal
+                                )
 
                                 //val temp: Any = JSON.convertValue<Any>(parmVal, TypeFactory.defaultInstance().constructType(param.type.javaType))
                                 useValueForParm(param, temp)
@@ -80,7 +86,8 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 } else {
                     // see if parameter has prefixed values in the input parameters that match
                     val parmPrefix = param.name + "."
-                    val tempMap = request.params().entries().filter { it.key.startsWith(parmPrefix) }.map { it.key.mustNotStartWith(parmPrefix) to it.value }.toMap()
+                    val tempMap = request.params().entries().filter { it.key.startsWith(parmPrefix) }
+                        .map { it.key.mustNotStartWith(parmPrefix) to it.value }.toMap()
 
                     val bodyJson = routeContext.getBodyAsString()
                     val hasBodyJson = bodyJson.isNullOrBlank().not()
@@ -90,22 +97,32 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                     if (!hasPrefixParams && (!hasBodyJson || usedBodyJsonAlready) && param.isOptional) {
                         // this is ok, optional parameter not resolved will have default value
                     } else if (hasPrefixParams) {
-                       //  TODO: later but for each property: val temp: Any = TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass, param.type.jvmErasure.java, parmVal)
+                        //  TODO: later but for each property: val temp: Any = TypeConversionConfig.defaultConverter.convertValue<Any, Any>(parmVal.javaClass, param.type.jvmErasure.java, parmVal)
 
-                        val temp: Any = JSON.convertValue<Any>(tempMap, TypeFactory.defaultInstance().constructType(param.type.jvmErasure.java))
+                        val temp: Any = JSON.convertValue<Any>(
+                            tempMap,
+                            TypeFactory.defaultInstance().constructType(param.type.jvmErasure.java)
+                        )
                         useValueForParm(param, temp)
                     } else if (usedBodyJsonAlready) {
                         throw HttpErrorCode("Already consumed JSON Body, and cannot bind parameter ${param.name} from incoming path, query or multipart form parameters for [$dispatchFunction]")
                     } else if (routeContext.request().getHeader(HttpHeaderNames.CONTENT_TYPE) != "application/json" &&
-                            !routeContext.request().getHeader(HttpHeaderNames.CONTENT_TYPE).startsWith("application/json;")) {
+                        !routeContext.request().getHeader(HttpHeaderNames.CONTENT_TYPE).startsWith("application/json;")
+                    ) {
                         throw HttpErrorCode("No JSON Body obviously present (Content-Type header application/json missing), cannot bind parameter ${param.name} from incoming path, query or multipart form parameters for [$dispatchFunction]")
                     } else {
                         try {
                             usedBodyJsonAlready = true
-                            val temp: Any = JSON.readValue(routeContext.getBodyAsString(), TypeFactory.defaultInstance().constructType(param.type.jvmErasure.java))
+                            val temp: Any = JSON.readValue(
+                                routeContext.getBodyAsString(),
+                                TypeFactory.defaultInstance().constructType(param.type.jvmErasure.java)
+                            )
                             useValueForParm(param, temp)
                         } catch (ex: Throwable) {
-                            throw HttpErrorCode("cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.message}  for [$dispatchFunction]", causedBy = ex)
+                            throw HttpErrorCode(
+                                "cannot bind parameter ${param.name} from incoming data, expected valid JSON.  Failed due to ${ex.message}  for [$dispatchFunction]",
+                                causedBy = ex
+                            )
                         }
                     }
                 }
@@ -127,7 +144,8 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
         fun sendResponse(result: Any?) {
             if (disallowVoid
                 && (dispatchFunction.returnType.jvmErasure.simpleName == "void"
-                        || dispatchFunction.returnType.jvmErasure.simpleName == "Unit")) {
+                        || dispatchFunction.returnType.jvmErasure.simpleName == "Unit")
+            ) {
                 routeContext.fail(RuntimeException("Failure after invocation of route function:  A route without a return type must redirect. for [$dispatchFunction]"))
                 return
             } else if (dispatchFunction.returnType.jvmErasure.isAssignableFrom(String::class) || result is String) {
@@ -150,11 +168,13 @@ internal fun setHandlerDispatchWithDataBinding(route: Route, logger: Logger,
                 if (routeContext.response().getStatusCode() == 200) {
                     routeContext.response().setStatusCode(defaultSuccessStatus)
                 }
-                val contentType = routeContext.getAcceptableContentType() ?: /* producesContentType.nullIfBlank() ?: */ "application/json"
+                val contentType = routeContext.getAcceptableContentType()
+                        ?: /* producesContentType.nullIfBlank() ?: */ "application/json"
                 if (result is Void || result is Unit || result is Nothing) {
                     routeContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType).end()
                 } else {
-                    routeContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType).end(JSON.writeValueAsString(result))
+                    routeContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType)
+                        .end(JSON.writeValueAsString(result))
                 }
             }
         }

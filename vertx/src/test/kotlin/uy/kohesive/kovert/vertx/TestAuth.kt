@@ -36,12 +36,17 @@ class TestAuth : AbstractKovertTest() {
         super.beforeTest()
     }
 
-    @Test fun testAuthOnRoutes() {
+    @Test
+    fun testAuthOnRoutes() {
         val authService = MockAuthService()
         val authProvider = MockUserAuthProvider(authService)
 
         _router.route().handler(CookieHandler.create())
-        _router.route().handler(SessionHandler.create(LocalSessionStore.create(_vertx)).setSessionTimeout(TimeUnit.HOURS.toMillis(1L)).setNagHttps(false))
+        _router.route().handler(
+            SessionHandler.create(LocalSessionStore.create(_vertx)).setSessionTimeout(
+                TimeUnit.HOURS.toMillis(1L)
+            ).setNagHttps(false)
+        )
 
         _router.route().handler(UserSessionHandler.create(authProvider))
         _router.bindController(MockAdminController(), "/admin")
@@ -52,19 +57,38 @@ class TestAuth : AbstractKovertTest() {
         }
 
         fun login(user: MockUser, cookie: String?): String {
-            val newCookie = _client.testServer(HttpMethod.POST, "/api/login/${user.apikey}",
-                    assertResponse = """{"username":"${user.username}","permissions":[${user.permissions.map { """"$it"""" }.joinToString(",")}]}""",
-                    assertContentType = "application/json",
-                    cookie = cookie)
+            val newCookie = _client.testServer(
+                HttpMethod.POST, "/api/login/${user.apikey}",
+                assertResponse = """{"username":"${user.username}","permissions":[${user.permissions.map { """"$it"""" }.joinToString(
+                    ","
+                )}]}""",
+                assertContentType = "application/json",
+                cookie = cookie
+            )
             return newCookie ?: throw Exception("Missing cookie!")
         }
 
         var cookie: String? = logout(null)
         cookie = login(authService.user1, cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data1",
+            assertResponse = """{"what":"openData1"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data2",
+            assertResponse = """{"what":"openData2"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/user/data",
+            assertResponse = """{"what":"someUserData"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertStatus = 403, cookie = cookie)
@@ -73,10 +97,25 @@ class TestAuth : AbstractKovertTest() {
 
         cookie = logout(cookie)
         cookie = login(authService.user2, cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data1",
+            assertResponse = """{"what":"openData1"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data2",
+            assertResponse = """{"what":"openData2"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/user/data",
+            assertResponse = """{"what":"someUserData"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertStatus = 403, cookie = cookie)
@@ -85,20 +124,60 @@ class TestAuth : AbstractKovertTest() {
 
         cookie = logout(cookie)
         cookie = login(authService.user3, cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data1",
+            assertResponse = """{"what":"openData1"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data2",
+            assertResponse = """{"what":"openData2"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/admin/data",
+            assertResponse = """{"what":"someAdminData"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/user/data",
+            assertResponse = """{"what":"someUserData"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertResponse = """{"what":"someAdminStuff"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/admin/stuff",
+            assertResponse = """{"what":"someAdminStuff"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/admin/some/admin/data",
+            assertResponse = """{"what":"someAdminData"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertStatus = 403, cookie = cookie)
 
 
         cookie = logout(cookie)
         cookie = login(authService.user4, cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data1",
+            assertResponse = """{"what":"openData1"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data2",
+            assertResponse = """{"what":"openData2"}""",
+            cookie = cookie
+        )
         _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/user/data", assertStatus = 403, cookie = cookie)
         _client.testServer(HttpMethod.GET, "/api/some/important/data", assertStatus = 403, cookie = cookie)
@@ -109,14 +188,54 @@ class TestAuth : AbstractKovertTest() {
 
         cookie = logout(cookie)
         cookie = login(authService.user5, cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data1", assertResponse = """{"what":"openData1"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/open/data2", assertResponse = """{"what":"openData2"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/user/data", assertResponse = """{"what":"someUserData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/important/data", assertResponse = """{"what":"someImportantData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/api/some/admin/stuff", assertResponse = """{"what":"someAdminStuff"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/admin/some/admin/data", assertResponse = """{"what":"someAdminData"}""", cookie = cookie)
-        _client.testServer(HttpMethod.GET, "/admin/some/important/data", assertResponse = """{"what":"someImportantData"}""", cookie = cookie)
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data1",
+            assertResponse = """{"what":"openData1"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/open/data2",
+            assertResponse = """{"what":"openData2"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/admin/data",
+            assertResponse = """{"what":"someAdminData"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/user/data",
+            assertResponse = """{"what":"someUserData"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/important/data",
+            assertResponse = """{"what":"someImportantData"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/api/some/admin/stuff",
+            assertResponse = """{"what":"someAdminStuff"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/admin/some/admin/data",
+            assertResponse = """{"what":"someAdminData"}""",
+            cookie = cookie
+        )
+        _client.testServer(
+            HttpMethod.GET,
+            "/admin/some/important/data",
+            assertResponse = """{"what":"someImportantData"}""",
+            cookie = cookie
+        )
 
         cookie = logout(cookie)
         // unlogged in user, no session
@@ -202,7 +321,11 @@ class MockAuthService {
     val user2 = MockUser("user.two", "key:two", listOf("role:viewCompany"))
     val user3 = MockUser("user.three", "key:three", listOf("role:admin"))
     val user4 = MockUser("user.four", "key:four", listOf())
-    val user5 = MockUser("user.five", "key:five", listOf("role:viewUser", "resource:importantData", "role:admin", "role:viewCompany"))
+    val user5 = MockUser(
+        "user.five",
+        "key:five",
+        listOf("role:viewUser", "resource:importantData", "role:admin", "role:viewCompany")
+    )
 
     private val mockData_validUsers: List<MockUser> = listOf(user1, user2, user3, user4, user5)
 
@@ -224,7 +347,8 @@ class MockUserAuthProvider(val authService: MockAuthService) : AuthProvider {
             resultHandler.handle(Future.failedFuture("authInfo must contain username and password // or apiKey"))
         }
 
-        val user = if (apiKey != null) authService.apiKeyToUser(apiKey) else authService.userFromLogin(username!!, password!!)
+        val user =
+            if (apiKey != null) authService.apiKeyToUser(apiKey) else authService.userFromLogin(username!!, password!!)
         if (user != null) {
             resultHandler.handle(Future.succeededFuture(user))
         } else {

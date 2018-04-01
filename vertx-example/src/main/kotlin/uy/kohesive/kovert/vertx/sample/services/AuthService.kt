@@ -1,10 +1,5 @@
 package uy.kohesive.kovert.vertx.sample.services
 
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.bind
-import com.github.salomonbrys.kodein.conf.global
-import com.github.salomonbrys.kodein.instance
-import com.github.salomonbrys.kodein.singleton
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
@@ -12,7 +7,14 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.auth.AbstractUser
 import io.vertx.ext.auth.AuthProvider
+import org.kodein.di.Kodein
+import org.kodein.di.conf.global
+import org.kodein.di.direct
+import org.kodein.di.generic.bind
+import org.kodein.di.generic.instance
+import org.kodein.di.generic.singleton
 import uy.klutter.vertx.json.jsonObject
+
 
 interface AuthService {
     fun apiKeyToUser(apiKey: String): User?
@@ -35,7 +37,7 @@ class MockAuthService : AuthService {
 }
 
 // simply auth provider for Vertx using our auth service, see: http://vertx.io/docs/vertx-auth-common/java/
-class SimpleUserAuthProvider(val authService: AuthService = Kodein.global.instance()) : AuthProvider {
+class SimpleUserAuthProvider(val authService: AuthService = Kodein.global.direct.instance()) : AuthProvider {
     override fun authenticate(authInfo: JsonObject, resultHandler: Handler<AsyncResult<io.vertx.ext.auth.User>>) {
         val username = authInfo.getString("username")
         val password = authInfo.getString("password")

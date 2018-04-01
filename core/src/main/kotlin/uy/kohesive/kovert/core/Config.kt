@@ -35,17 +35,27 @@ object KovertConfig {
         return this
     }
 
-    @Volatile var reportStackTracesOnExceptions: Boolean = false
+    @Volatile
+    var reportStackTracesOnExceptions: Boolean = false
 
-    @Deprecated("This setting should go away, please add your own body handler very early in your route setup") val autoAddBodyHandlersOnPutPostPatch: Boolean = false
+    @Deprecated("This setting should go away, please add your own body handler very early in your route setup")
+    val autoAddBodyHandlersOnPutPostPatch: Boolean = false
 
     private val templateEngines = arrayListOf<RegisteredTemplateEngine>()
 
-    fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: String, contentType: String = "text/html") {
+    fun registerTemplateEngine(
+        templateEngine: TemplateEngine,
+        recognizeBySuffix: String,
+        contentType: String = "text/html"
+    ) {
         registerTemplateEngine(templateEngine, listOf(recognizeBySuffix), contentType)
     }
 
-    fun registerTemplateEngine(templateEngine: TemplateEngine, recognizeBySuffix: List<String>, contentType: String = "text/html") {
+    fun registerTemplateEngine(
+        templateEngine: TemplateEngine,
+        recognizeBySuffix: List<String>,
+        contentType: String = "text/html"
+    ) {
         recognizeBySuffix.forEach {
             templateEngines.add(RegisteredTemplateEngine(it.mustStartWith('.'), contentType, templateEngine))
         }
@@ -56,10 +66,15 @@ object KovertConfig {
     fun engineForTemplate(template: String): RegisteredTemplateEngine {
         return template.nullIfBlank().whenNotNull { template ->
             KovertConfig.templateEngines.firstOrNull { template.endsWith(it.recognizeBySuffix) }
-        } ?: throw Exception("Cannot find render engine for template '${template}' (see KovertConfig.registerTemplateEngine)")
+        }
+                ?: throw Exception("Cannot find render engine for template '${template}' (see KovertConfig.registerTemplateEngine)")
     }
 
-    data class RegisteredTemplateEngine(val recognizeBySuffix: String, val contentType: String, val templateEngine: TemplateEngine)
+    data class RegisteredTemplateEngine(
+        val recognizeBySuffix: String,
+        val contentType: String,
+        val templateEngine: TemplateEngine
+    )
 }
 
 data class PrefixAsVerbWithSuccessStatus(val prefix: String, val verb: HttpVerb, val successStatusCode: Int)

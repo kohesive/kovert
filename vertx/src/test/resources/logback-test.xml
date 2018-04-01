@@ -8,9 +8,9 @@
         </encoder>
     </appender>
 
-    <logger name="uy.kohesive.kovert" level="DEBUG" />
+    <logger name="uy.kohesive.kovert" level="DEBUG"/>
 
     <root level="info">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

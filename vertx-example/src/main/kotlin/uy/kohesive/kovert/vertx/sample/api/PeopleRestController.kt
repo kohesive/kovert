@@ -1,8 +1,9 @@
 package uy.kohesive.kovert.vertx.sample.api
 
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.conf.global
-import com.github.salomonbrys.kodein.instance
+import org.kodein.di.Kodein
+import org.kodein.di.conf.global
+import org.kodein.di.direct
+import org.kodein.di.generic.instance
 import uy.kohesive.kovert.core.HttpErrorBadRequest
 import uy.kohesive.kovert.core.HttpErrorNotFound
 import uy.kohesive.kovert.vertx.sample.services.CompanyService
@@ -19,7 +20,10 @@ import uy.kohesive.kovert.vertx.sample.services.Person
  * GET api/people/employeed/:company
  *
  */
-class PeopleRestController(val peopleService: PeopleService = Kodein.global.instance(), val companyService: CompanyService = Kodein.global.instance()) {
+class PeopleRestController(
+    val peopleService: PeopleService = Kodein.global.direct.instance(),
+    val companyService: CompanyService = Kodein.global.direct.instance()
+) {
     fun ApiKeySecured.getPersonById(id: Int): Person = peopleService.findPersonById(id) ?: throw HttpErrorNotFound()
 
     fun ApiKeySecured.putPersonById(id: Int, person: Person): Person {

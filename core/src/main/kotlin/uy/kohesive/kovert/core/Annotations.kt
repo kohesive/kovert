@@ -52,7 +52,8 @@ annotation class Rendered(val template: String = "", val contentType: String = "
  * @param mode whether ALL or ANY of the roles must match, defaults to ANY
  */
 @Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY,AnnotationTarget.CLASS)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
 annotation class Authority(vararg val roles: String, val mode: AuthorityMode = AuthorityMode.ANY)
+
 enum class AuthorityMode { ALL, ANY }
 

@@ -1,14 +1,16 @@
 package uy.kohesive.kovert.vertx.boot
 
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.conf.global
-import com.github.salomonbrys.kodein.instance
+
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import org.kodein.di.Kodein
+import org.kodein.di.conf.global
+import org.kodein.di.direct
+import org.kodein.di.generic.instance
 import uy.klutter.config.typesafe.kodein.ConfigModule
 import uy.klutter.core.common.notExists
 import uy.klutter.core.common.verifiedBy
@@ -36,7 +38,12 @@ class KovertVertx private constructor() {
         /**
          * Returns a Promise<Vertx, Exception> representing the started Vertx instance
          */
-        fun start(kodein: Kodein = Kodein.global, vertxCfg: VertxConfig = kodein.instance(), workingDir: Path? = null, vertxOptionsInit: VertxOptions.() -> Unit = {}): Promise<Vertx, Exception> {
+        fun start(
+            kodein: Kodein = Kodein.global,
+            vertxCfg: VertxConfig = kodein.direct.instance(),
+            workingDir: Path? = null,
+            vertxOptionsInit: VertxOptions.() -> Unit = {}
+        ): Promise<Vertx, Exception> {
             LOG.warn("Starting Vertx")
 
             val deferred = deferred<Vertx, Exception>()
@@ -47,7 +54,12 @@ class KovertVertx private constructor() {
                 if (!vertxCfg.fileCaching.cacheBaseDir.isNullOrBlank()) {
                     System.setProperty("vertx.cacheDirBase", vertxCfg.fileCaching.cacheBaseDir)
                 }
-                val calculatedWorkingDir = (workingDir ?: Paths.get(System.getProperty("vertx.cwd", "."))).toAbsolutePath() verifiedBy { path ->
+                val calculatedWorkingDir = (workingDir ?: Paths.get(
+                    System.getProperty(
+                        "vertx.cwd",
+                        "."
+                    )
+                )).toAbsolutePath() verifiedBy { path ->
                     if (path.notExists()) {
                         throw Exception("Working directory was specified as ${path.toString()}, but does not exist.")
                     }
@@ -68,7 +80,8 @@ class KovertVertx private constructor() {
                     hazelcastConfig.networkConfig.join.tcpIpConfig.setMembers(listOf(loopback))
                 }
                 LOG.trace(hazelcastConfig.toString())
-                val vertxOptions = VertxOptions().setWorkerPoolSize(vertxCfg.workerThreadPoolSize.coerceIn((numCores * 2)..(numCores * 128)))
+                val vertxOptions =
+                    VertxOptions().setWorkerPoolSize(vertxCfg.workerThreadPoolSize.coerceIn((numCores * 2)..(numCores * 128)))
                         .setClustered(vertxCfg.clustered)
                         .setClusterManager(HazelcastClusterManager(hazelcastConfig))
 
@@ -92,12 +105,14 @@ class KovertVertx private constructor() {
 }
 
 
-data class VertxConfig(val clustered: Boolean = true,
-                       val clusterName: String,
-                       val clusterPass: String,
-                       val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
-                       val fileCaching: FileCacheConfig,
-                       val forceLocalClusterOnly: Boolean = false)
+data class VertxConfig(
+    val clustered: Boolean = true,
+    val clusterName: String,
+    val clusterPass: String,
+    val workerThreadPoolSize: Int = Runtime.getRuntime().availableProcessors() * 2,
+    val fileCaching: FileCacheConfig,
+    val forceLocalClusterOnly: Boolean = false
+)
 
 data class FileCacheConfig(val enableCache: Boolean, val cacheBaseDir: String?)
 

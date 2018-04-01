@@ -76,6 +76,10 @@ subprojects {
         maven {
             url 'http://dl.bintray.com/jaysonminard/kohesive'
         }
+        maven {
+            url 'https://dl.bintray.com/kodein-framework/Kodein-DI/'
+        }
+        mavenLocal()
     }
 
     dependencies {

@@ -407,3 +407,14 @@ View the [sample application](vertx-example/src/main/kotlin/uy/kohesive/kovert/v
 * Configurable clauses in method names for substitution patterns (i.e. "By", "In", "With" are substitution patterns)
 * With View support, people will want to ask for the HREF from a given controller method, should be able to provide that in Kotlin M13, or can provide using the `val getSomeThing = fun MyContext.(param: String): MyObject { ... }` form of declaring a controller method already since `MyClass::getSomething` can reference that value, whereas in the other form, it is not referenceable in M12.
 * Ignore annotation for extension methods in controller that are not desired
+
+
+## Special Thanks
+
+![YourKit logo](https://www.yourkit.com/images/yklogo.png)
+
+YourKit supports open source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of [YourKit Java Profiler](https://www.yourkit.com/java/profiler/)
+and [YourKit .NET Profiler](https://www.yourkit.com/.net/profiler/),
+innovative and intelligent tools for profiling Java and .NET applications.
+

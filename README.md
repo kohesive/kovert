@@ -1,4 +1,4 @@
-[![Kotlin](https://img.shields.io/badge/kotlin-1.2.31-blue.svg)](http://kotlinlang.org) [![Maven Central](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](https://mvnrepository.com/artifact/uy.kohesive.kovert) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack #kohesive](https://img.shields.io/badge/chat-kotlin%20slack%20%23kohesive-orange.svg)](http://kotlinslackin.herokuapp.com)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.3.x-blue.svg)](http://kotlinlang.org) [![Maven Central](https://img.shields.io/maven-central/v/uy.kohesive.kovert/kovert-core.svg)](https://mvnrepository.com/artifact/uy.kohesive.kovert) [![CircleCI branch](https://img.shields.io/circleci/project/kohesive/kovert/master.svg)](https://circleci.com/gh/kohesive/kovert/tree/master) [![Issues](https://img.shields.io/github/issues/kohesive/kovert.svg)](https://github.com/kohesive/kovert/issues?q=is%3Aopen) [![DUB](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/kohesive/kovert/blob/master/LICENSE) [![Kotlin Slack #kohesive](https://img.shields.io/badge/chat-kotlin%20slack%20%23kohesive-orange.svg)](http://kotlinslackin.herokuapp.com)
 
 # Kovert
 
@@ -15,13 +15,13 @@ For starting an application with Kovert, you have two options:
 
 In addition, Kovert uses [Klutter/Vertx3](https://github.com/kohesive/klutter/tree/master/vertx3) module which contains helper classes for working with Vert-x that use [Kovenant](http://kovenant.komponents.nl) promises -- including ensuring that the dispatcher for Kovenant is unified with the thread dispatching in Vert.x so that Vert.x context is maintained on dispatch threads, and callbacks come as expected by Vert.x as well.  There are additional helpers for Vert.x JSON objects, the logging facade, web, and integration with [Injekt](#injekt), and more.
 
-#### Maven Dependnecy (Vert.x Version, requires JDK 8)
+#### Maven Dependnecy (Vert.x Version, requires JDK 8 or newer)
 
 Include the dependency in your Gradle / Maven projects that are setup with Kotlin.
 
 **Gradle:**
 ```
-compile "uy.kohesive.kovert:kovert-vertx:1.4.+"
+compile "uy.kohesive.kovert:kovert-vertx:1.5.+"
 ```
 
 **Maven:**
@@ -29,7 +29,7 @@ compile "uy.kohesive.kovert:kovert-vertx:1.4.+"
 <dependency>
     <groupId>uy.kohesive.kovert</groupId>
     <artifactId>kovert-vertx</artifactId>
-    <version>[1.4.0,1.5.0)</version>
+    <version>[1.5.0,1.6.0)</version>
 </dependency>
 ```
 
